@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - release
-    paths:
-      - 'backend/**'
 
 jobs:
   build:
@@ -28,6 +26,6 @@ jobs:
         uses: docker/build-push-action@v5
 
         with:
-          context: ./backend
+          context: .
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/${{ github.event.repository.name }}-be:latest

@@ -35,11 +35,8 @@ services:
       - database
   
   frontend:
-    # image: xedom/codeduel-fe
+    image: xedom/codeduel-fe
     container_name: frontend
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
     restart: always
     ports:
       - 8080:80
