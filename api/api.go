@@ -70,7 +70,8 @@ func (s *APIServer) Run() {
 }
 
 func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) error {
-	host := fmt.Sprintf("http://%s:%s", s.host, s.port)
+	// host := fmt.Sprintf("http://%s:%s", s.host, s.port)
+	host := fmt.Sprintf("http://%s", r.Host)
 
 	return WriteJSON(w, http.StatusOK, map[string]any{
 		"message": "Welcome to CodeDuel API",

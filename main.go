@@ -63,10 +63,12 @@ func warnUndefinedEnvVars() {
     "AUTH_GITHUB_CLIENT_CALLBACK_URL",
   }
   
+  log.Printf("")
   for _, envVar := range envVars {
     test, exists := os.LookupEnv(envVar)
     if !exists { log.Printf("[MAIN] Warning: %s not defined in .env file", envVar) }
     if test == "" { log.Printf("[MAIN] Warning: %s is empty", envVar) }
     log.Printf("[MAIN] %s: %s", envVar, test)
   }
+  log.Printf("")
 }
