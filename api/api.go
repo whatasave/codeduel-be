@@ -61,12 +61,16 @@ func (s *APIServer) Run() {
 
 	frontendUrl := os.Getenv("FRONTEND_URL")
 
-	http.ListenAndServe(s.listenAddr, handlers.CORS(
+	err := http.ListenAndServe(s.listenAddr, handlers.CORS(
 		handlers.AllowedOrigins([]string{frontendUrl}),
 		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "PUT", "DELETE"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Access-Control-Allow-Headers", "Authorization", "X-Requested-With", "x-jwt-token"}),
 		handlers.AllowCredentials(),
 	)(router))
+
+	if err != nil {
+		log.Fatal("[API] Cannot start http server: ", err)
+	}
 }
 
 func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) error {
