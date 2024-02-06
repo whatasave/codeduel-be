@@ -13,10 +13,12 @@ import (
 )
 
 func docker() {
-  fmt.Println("Super docker runner")
+	fmt.Println("Super docker runner")
 
-	cli, err := client.NewClientWithOpts(client.FromEnv);
-	if err != nil { panic(err) }
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		panic(err)
+	}
 
 	// pull image
 	// reader, err := cli.ImagePull(context.Background(), "docker.io/library/alpine", types.ImagePullOptions{})
@@ -42,18 +44,23 @@ func docker() {
 		// Env: []string{"CODE=const a = 5 + 5; console.log('yooo: ' + a);"},
 		Env: []string{"CODE=b=5+5;print('yooo: ', a)"},
 	}, nil, nil, nil, "")
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 
-	if err := cli.ContainerStart(context.Background(), jsContainer.ID, types.ContainerStartOptions{}); err != nil { panic(err) }
-
+	if err := cli.ContainerStart(context.Background(), jsContainer.ID, types.ContainerStartOptions{}); err != nil {
+		panic(err)
+	}
 
 	// get container output
 	reader, err := cli.ContainerLogs(context.Background(), jsContainer.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
-		Follow: true,
+		Follow:     true,
 	})
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer reader.Close()
 
 	buf := new(strings.Builder)
@@ -62,8 +69,9 @@ func docker() {
 	// demultiplex output with github.com/docker/docker/pkg/stdcopy.StdCopy
 	// _, err = stdcopy.StdCopy(os.Stdout, os.Stderr, reader) // to host stdout
 	_, err = stdcopy.StdCopy(buf, bufError, reader) // to buffer
-	if err != nil { log.Fatal(err) }
-
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// demultiplex output with io.Copy
 	// _, err = io.Copy(os.Stdout, reader)
@@ -75,13 +83,19 @@ func docker() {
 	fmt.Println("BufferError output:\n--------\n\t", bufError.String())
 
 	// stopping and removing container
-	if err := cli.ContainerStop(context.Background(), jsContainer.ID, container.StopOptions{}); err != nil { panic(err) }
+	if err := cli.ContainerStop(context.Background(), jsContainer.ID, container.StopOptions{}); err != nil {
+		panic(err)
+	}
 	// if err := cli.ContainerKill(context.Background(), jsContainer.ID, "SIGKILL"); err != nil { panic(err) }
-	if err := cli.ContainerRemove(context.Background(), jsContainer.ID, types.ContainerRemoveOptions{}); err != nil { panic(err) }
+	if err := cli.ContainerRemove(context.Background(), jsContainer.ID, types.ContainerRemoveOptions{}); err != nil {
+		panic(err)
+	}
 
 	// listing containers
 	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{})
-	if err != nil { panic(err) }
+	if err != nil {
+		panic(err)
+	}
 
 	for _, container := range containers {
 		fmt.Printf("%s %s\n", container.ID[:10], container.Image)
