@@ -33,8 +33,9 @@ func main() {
 func loadingEnvVars() {
   isProduction := os.Getenv("GO_ENV") == "production"
   if isProduction { return }
-  
-  path_dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+  log.Printf("[MAIN] Starting in development mode")
+
+  path_dir, err := filepath.Abs(filepath.Dir(os.Args[1]))
   if err != nil { log.Printf("[MAIN] Error getting absolute path: %v", err) }
   // log.Default().SetPrefix("[MAIN] ")
   log.Printf("Loading .env file from %s", path_dir)
