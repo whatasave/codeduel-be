@@ -141,44 +141,54 @@ func (s *APIServer) handleGithubAuthCallback(w http.ResponseWriter, r *http.Requ
 }
 
 func getGithubAccessToken(clientID, clientSecret, code, state string) (*types.GithubAccessTokenResponse, error) {
-	requestURL := "https://github.com/login/oauth/access_token"
+    requestURL := "https://github.com/login/oauth/access_token"
 
-	// Set us the request body as JSON
-	requestBodyMap := map[string]string{
-		"client_id":     clientID,
-		"client_secret": clientSecret,
-		"code":          code,
-		// "redirect_uri": client_callback_url,
-		"state": state,
-	}
-	requestJSON, _ := json.Marshal(requestBodyMap)
+    // Set up the request body
+    requestBodyMap := map[string]string{
+        "client_id":     clientID,
+        "client_secret": clientSecret,
+        "code":          code,
+        "state":         state,
+    }
+    requestJSON, err := json.Marshal(requestBodyMap)
+    if err != nil {
+        return nil, fmt.Errorf("failed to marshal request body: %w", err) // Wrap error with context
+    }
 
-	// POST request to set URL
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(requestJSON))
-	if err != nil {
-		return nil, fmt.Errorf("Request creation failed")
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "application/json")
+    // Create the POST request
+    req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(requestJSON))
+    if err != nil {
+        return nil, fmt.Errorf("failed to create request: %w", err)
+    }
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Accept", "application/json")
 
-	// Make the request
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("Request failed")
-	}
+    // Make the request
+    resp, err := http.DefaultClient.Do(req)
+    if err != nil {
+        return nil, fmt.Errorf("request failed: %w", err)
+    }
+    defer resp.Body.Close() // Ensure body closure
 
-	// Convert stringified JSON to a struct object of type githubAccessTokenResponse
-	respBody, _ := io.ReadAll(resp.Body)
-	githubResponse := &types.GithubAccessTokenResponse{}
-	json.Unmarshal(respBody, &githubResponse)
+    // Check for successful response status code
+    if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+        bodyBytes, _ := io.ReadAll(resp.Body)
+        return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+    }
 
-	return githubResponse, nil
+    // Decode the JSON response
+    githubResponse := &types.GithubAccessTokenResponse{}
+    if err := json.NewDecoder(resp.Body).Decode(githubResponse); err != nil {
+        return nil, fmt.Errorf("failed to decode JSON response: %w", err)
+    }
+
+    return githubResponse, nil
 }
 
 func getGithubData(accessToken string) (*types.GithubUser, error) {
 	req, err := http.NewRequest("GET", "https://api.github.com/user", nil)
 	if err != nil {
-		return nil, fmt.Errorf("Get Github Data API Request creation failed")
+		return nil, fmt.Errorf("get Github Data API Request creation failed")
 	}
 
 	// Add authorization header
@@ -188,7 +198,7 @@ func getGithubData(accessToken string) (*types.GithubUser, error) {
 	// Make the request
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Get Github Data Request failed")
+		return nil, fmt.Errorf("get Github Data Request failed")
 	}
 
 	// Read the response as a byte slice
@@ -205,7 +215,7 @@ func getGithubData(accessToken string) (*types.GithubUser, error) {
 func getGithubEmails(accessToken string) (*[]types.GithubEmails, error) {
 	req, err := http.NewRequest("GET", "https://api.github.com/user/emails", nil)
 	if err != nil {
-		return nil, fmt.Errorf("Get Github Emails API Request creation failed")
+		return nil, fmt.Errorf("get Github Emails API Request creation failed")
 	}
 
 	// Add authorization header
@@ -215,7 +225,7 @@ func getGithubEmails(accessToken string) (*[]types.GithubEmails, error) {
 	// Make the request
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("Get Github Emails Request failed")
+		return nil, fmt.Errorf("get Github Emails Request failed")
 	}
 
 	// Read the response as a byte slice
