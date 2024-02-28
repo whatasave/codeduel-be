@@ -34,7 +34,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
 func NewAPIServer(host, port string, db db.DB) *APIServer {
 	address := fmt.Sprintf("%s:%s", host, port)
-	log.Print("[API] Starting API server on ", address)
+	log.Print("[API] Starting API server on http://", address)
 	return &APIServer{
 		host:       host,
 		port:       port,
