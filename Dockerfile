@@ -1,7 +1,7 @@
 FROM golang:1.21 as build-stage
 
 ENV BINARY_NAME=codeduel-be
-ENV GO_ENV=production
+ENV ENV=production
 
 RUN useradd -u 1001 -m codeduel-user
 
@@ -27,7 +27,7 @@ COPY --from=build-stage /usr/src/app/bin /usr/local/bin
 COPY --from=build-stage /etc/passwd /etc/passwd
 
 USER 1001
-# USER nonroot:nonroot
+# USER codeduel-user:codeduel-user
 EXPOSE 5000
 
 ENTRYPOINT ["codeduel-be"]

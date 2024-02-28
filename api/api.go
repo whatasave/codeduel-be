@@ -44,17 +44,17 @@ func NewAPIServer(config *config.Config, db db.DB) *APIServer {
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
 
-	router.HandleFunc("/api/v1", makeHTTPHandleFunc(s.handleRoot))
-	router.HandleFunc("/api/v1/health", makeHTTPHandleFunc(s.handleHealth))
-	router.HandleFunc("/api/v1/user", makeHTTPHandleFunc(s.handleUser))
-	router.HandleFunc("/api/v1/user/{id}", makeHTTPHandleFunc(s.handleUserByID))
-	router.HandleFunc("/api/v1/profile", authMiddleware(makeHTTPHandleFunc(s.handleProfile)))
+	router.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))
+	router.HandleFunc("/v1/health", makeHTTPHandleFunc(s.handleHealth))
+	router.HandleFunc("/v1/user", makeHTTPHandleFunc(s.handleUser))
+	router.HandleFunc("/v1/user/{id}", makeHTTPHandleFunc(s.handleUserByID))
+	router.HandleFunc("/v1/profile", authMiddleware(makeHTTPHandleFunc(s.handleProfile)))
 
-	router.HandleFunc("/api/v1/validateToken", makeHTTPHandleFunc(s.handleValidateToken)) // TODO: make it accessible only by lobby service
-	// router.HandleFunc("/api/v1/lobbies", makeHTTPHandleFunc(s.handleLobbies))
+	router.HandleFunc("/v1/validateToken", makeHTTPHandleFunc(s.handleValidateToken)) // TODO: make it accessible only by lobby service
+	// router.HandleFunc("/v1/lobbies", makeHTTPHandleFunc(s.handleLobbies))
 
-	router.HandleFunc("/api/v1/auth/github", makeHTTPHandleFunc(s.handleGithubAuth))
-	router.HandleFunc("/api/v1/auth/github/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback))
+	router.HandleFunc("/v1/auth/github", makeHTTPHandleFunc(s.handleGithubAuth))
+	router.HandleFunc("/v1/auth/github/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback))
 
 	err := http.ListenAndServe(s.listenAddr, handlers.CORS(
 		handlers.AllowedOrigins([]string{s.config.FrontendURL}),
@@ -76,14 +76,14 @@ func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) error {
 		"version": "v1",
 		"status":  "ok",
 		"apis": []string{
-			fmt.Sprintf("%s/api/v1", host),
-			fmt.Sprintf("%s/api/v1/health", host),
-			fmt.Sprintf("%s/api/v1/user", host),
-			fmt.Sprintf("%s/api/v1/user/{id}", host),
-			fmt.Sprintf("%s/api/v1/profile", host),
-			// fmt.Sprintf("%s/api/v1/lobbies", host),
-			fmt.Sprintf("%s/api/v1/auth/github", host),
-			fmt.Sprintf("%s/api/v1/auth/github/callback", host),
+			fmt.Sprintf("%s/v1", host),
+			fmt.Sprintf("%s/v1/health", host),
+			fmt.Sprintf("%s/v1/user", host),
+			fmt.Sprintf("%s/v1/user/{id}", host),
+			fmt.Sprintf("%s/v1/profile", host),
+			// fmt.Sprintf("%s/v1/lobbies", host),
+			fmt.Sprintf("%s/v1/auth/github", host),
+			fmt.Sprintf("%s/v1/auth/github/callback", host),
 		},
 	})
 }
