@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/db"
 	"github.com/xedom/codeduel/utils"
 )
@@ -20,8 +20,7 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 }
 
 type APIServer struct {
-	host       string
-	port       string
+	config    *config.Config
 	listenAddr string
 	db         db.DB
 }
@@ -32,14 +31,13 @@ type ApiError struct {
 
 type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
-func NewAPIServer(host, port string, db db.DB) *APIServer {
-	address := fmt.Sprintf("%s:%s", host, port)
+func NewAPIServer(config *config.Config, db db.DB) *APIServer {
+	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	log.Print("[API] Starting API server on http://", address)
 	return &APIServer{
-		host:       host,
-		port:       port,
-		listenAddr: address,
+		config:     config,
 		db:         db,
+		listenAddr: address,
 	}
 }
 
@@ -58,10 +56,8 @@ func (s *APIServer) Run() {
 	router.HandleFunc("/api/v1/auth/github", makeHTTPHandleFunc(s.handleGithubAuth))
 	router.HandleFunc("/api/v1/auth/github/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback))
 
-	frontendUrl := os.Getenv("FRONTEND_URL")
-
 	err := http.ListenAndServe(s.listenAddr, handlers.CORS(
-		handlers.AllowedOrigins([]string{frontendUrl}),
+		handlers.AllowedOrigins([]string{s.config.FrontendURL}),
 		handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS", "PUT", "DELETE"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Access-Control-Allow-Headers", "Authorization", "X-Requested-With", "x-jwt-token"}),
 		handlers.AllowCredentials(),
@@ -73,7 +69,6 @@ func (s *APIServer) Run() {
 }
 
 func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) error {
-	// host := fmt.Sprintf("http://%s:%s", s.host, s.port)
 	host := fmt.Sprintf("http://%s", r.Host)
 
 	return WriteJSON(w, http.StatusOK, map[string]any{

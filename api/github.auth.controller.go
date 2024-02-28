@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/xedom/codeduel/types"
 	"github.com/xedom/codeduel/utils"
@@ -14,13 +13,10 @@ func (s *APIServer) handleGithubAuth(w http.ResponseWriter, r *http.Request) err
 		// redirect to github auth
 		urlParams := r.URL.Query()
 
-		client_id := os.Getenv("AUTH_GITHUB_CLIENT_ID")
-		// client_secret := os.Getenv("AUTH_GITHUB_CLIENT_SECRET")
-		client_callback_url := os.Getenv("AUTH_GITHUB_CLIENT_CALLBACK_URL")
 		redirect := "https://github.com/login/oauth/authorize"
 
-		urlParams.Add("client_id", client_id)
-		urlParams.Add("redirect_uri", client_callback_url)
+		urlParams.Add("client_id", s.config.AuthGitHubClientID)
+		urlParams.Add("redirect_uri", s.config.AuthGitHubClientCallbackURL)
 		urlParams.Add("return_to", "/frontend")
 		urlParams.Add("response_type", "code")
 		urlParams.Add("scope", "user:email")
@@ -53,21 +49,7 @@ func (s *APIServer) handleGithubAuthGetRequest(w http.ResponseWriter, r *http.Re
 	code := urlParams.Get("code")
 	state := urlParams.Get("state") // It is used to protect against cross-site request forgery attacks.
 
-	client_id, err := utils.GetEnv("AUTH_GITHUB_CLIENT_ID")
-	if err != nil {
-		return err
-	}
-	client_secret, err := utils.GetEnv("AUTH_GITHUB_CLIENT_SECRET")
-	if err != nil {
-		return err
-	}
-	// client_callback_url := os.Getenv("AUTH_GITHUB_CLIENT_CALLBACK_URL")
-	frontendCallback, err := utils.GetEnv("FRONTEND_URL_AUTH_CALLBACK")
-	if err != nil {
-		return err
-	}
-
-	githubAccessToken, err := GetGithubAccessToken(client_id, client_secret, code, state)
+	githubAccessToken, err := GetGithubAccessToken(s.config.AuthGitHubClientID, s.config.AuthGitHubClientSecret, code, state)
 	if err != nil {
 		return err
 	}
@@ -122,7 +104,7 @@ func (s *APIServer) handleGithubAuthGetRequest(w http.ResponseWriter, r *http.Re
 	cookie := &http.Cookie{
 		Name:    "jwt",
 		Value:   token.Jwt,
-		Domain:  s.host, // TODO may cause problems
+		Domain:  s.config.Host, // TODO may cause problems
 		Path:    "/",
 		Expires: utils.UnixTimeToTime(token.ExpiresAt),
 		// MaxAge: 86400,
@@ -137,8 +119,7 @@ func (s *APIServer) handleGithubAuthGetRequest(w http.ResponseWriter, r *http.Re
 	// fmt.Printf("Cookie: %+v\n", cookie)
 	// TODO: redirect to frontend
 	// WriteJSON(w, http.StatusOK, token)
-	// frontend := os.Getenv("FRONTEND_URL")
-	redirectUrl := fmt.Sprintf("%s?jwt=%s", frontendCallback, token.Jwt)
+	redirectUrl := fmt.Sprintf("%s?jwt=%s", s.config.FrontendURLAuthCallback, token.Jwt)
 	http.Redirect(w, r, redirectUrl, http.StatusPermanentRedirect)
 
 	return nil

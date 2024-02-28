@@ -10,7 +10,7 @@ run: build
 	./bin/$(BINARY_NAME)
 
 dev:
-	go run . ./.env
+	go run .
 
 test:
 	go test -v ./...

@@ -23,7 +23,7 @@ func (s *APIServer) handleUser(w http.ResponseWriter, r *http.Request) error {
 	return fmt.Errorf("method not allowed %s", r.Method)
 }
 
-func (s *APIServer) handleGetUsers(w http.ResponseWriter, r *http.Request) error {
+func (s *APIServer) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
 	log.Print("[API] Fetching users")
 	users, err := s.db.GetUsers()
 	if err != nil {
@@ -78,7 +78,7 @@ func (s *APIServer) handleCreateUser(w http.ResponseWriter, r *http.Request) err
 	return WriteJSON(w, http.StatusOK, user)
 }
 
-func (s *APIServer) handleDeleteUserByID(w http.ResponseWriter, r *http.Request) error {
+func (s *APIServer) handleDeleteUserByID(_ http.ResponseWriter, r *http.Request) error {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
