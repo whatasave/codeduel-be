@@ -19,7 +19,7 @@ func main() {
     }
   }
   config := config.LoadConfig()
-  
+
   db, err := db.NewDB(
     config.MariaDBHost,
     config.MariaDBPort,

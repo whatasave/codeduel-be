@@ -20,6 +20,12 @@ type DB interface {
 	GetUsers() ([]*types.User, error)
 	GetUserByID(int) (*types.User, error)
 
+	CreateChallenge(*types.Challenge) error
+	DeleteChallenge(int) error
+	UpdateChallenge(*types.Challenge) error
+	GetChallenges() (*[]types.Challenge, error)
+	GetChallengeByID(int) (*types.Challenge, error)
+
 	CreateAuth(*types.AuthEntry) error
 	GetAuthByProviderAndID(string, string) (*types.AuthEntry, error)
 }

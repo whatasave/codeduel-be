@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/xedom/codeduel/db"
 	"github.com/xedom/codeduel/types"
 	"github.com/xedom/codeduel/utils"
 )
@@ -90,13 +91,7 @@ func (s *APIServer) handleDeleteUserByID(_ http.ResponseWriter, r *http.Request)
 }
 
 func (s *APIServer) handleProfile(w http.ResponseWriter, r *http.Request) error {
-	headerUserID := r.Header.Get("x-user-id")
-	userID, err := strconv.Atoi(headerUserID)
-	if err != nil {
-		return err
-	}
-
-	user, err := s.db.GetUserByID(userID)
+	user, err := GetAuthUser(r, s.db)
 	if err != nil {
 		return err
 	}
@@ -121,4 +116,19 @@ func (s *APIServer) handleValidateToken(w http.ResponseWriter, r *http.Request) 
 	// }
 
 	return WriteJSON(w, http.StatusOK, decodedUserData)
+}
+
+func GetAuthUser(r *http.Request, db db.DB) (*types.User, error) {
+	headerUserID := r.Header.Get("x-user-id")
+	userID, err := strconv.Atoi(headerUserID)
+	if err != nil {
+		return nil, err
+	}
+	
+	user, err := db.GetUserByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	
+	return user, nil
 }

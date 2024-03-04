@@ -10,6 +10,7 @@ run: build
 	./bin/$(BINARY_NAME)
 
 dev:
+	swag init
 	go run .
 
 test:

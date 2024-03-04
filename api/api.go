@@ -11,6 +11,9 @@ import (
 	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/db"
 	"github.com/xedom/codeduel/utils"
+
+	_ "github.com/swaggo/http-swagger/example/gorilla/docs"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
@@ -34,6 +37,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 func NewAPIServer(config *config.Config, db db.DB) *APIServer {
 	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	log.Print("[API] Starting API server on http://", address)
+	log.Print("[API] Docs http://localhost:5000/docs/index.html")
 	return &APIServer{
 		config:     config,
 		db:         db,
@@ -41,17 +45,39 @@ func NewAPIServer(config *config.Config, db db.DB) *APIServer {
 	}
 }
 
+//	@title						CodeDuel API
+//	@version					1.0
+//	@description				Backend API for CodeDuel
+//	@securityDefinitions.apiKey	JWT
+//	@in							header
+//	@name						token
+//	@termsOfService				http://swagger.io/terms/
+//	@contact.name				API Support
+//	@contact.email				support@codeduel
+//	@license.name				Apache 2.0
+//	@license.url				http://www.apache.org/licenses/LICENSE-2.0.html
+//	@host						localhost:5000
+//	@schemes					http 
+//	@BasePath					/v1/
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
+	
+	router.PathPrefix("/docs").Handler(httpSwagger.WrapHandler).Methods(http.MethodGet)
 
 	router.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))
+
 	router.HandleFunc("/v1/health", makeHTTPHandleFunc(s.handleHealth))
+	router.HandleFunc("/v1/validateToken", makeHTTPHandleFunc(s.handleValidateToken)) // TODO: make it accessible only by lobby service
+
 	router.HandleFunc("/v1/user", makeHTTPHandleFunc(s.handleUser))
 	router.HandleFunc("/v1/user/{id}", makeHTTPHandleFunc(s.handleUserByID))
 	router.HandleFunc("/v1/profile", authMiddleware(makeHTTPHandleFunc(s.handleProfile)))
 
-	router.HandleFunc("/v1/validateToken", makeHTTPHandleFunc(s.handleValidateToken)) // TODO: make it accessible only by lobby service
-	// router.HandleFunc("/v1/lobbies", makeHTTPHandleFunc(s.handleLobbies))
+	router.HandleFunc("/v1/challenge", makeHTTPHandleFunc(s.handleGetChallenges)).Methods(http.MethodGet)
+	router.HandleFunc("/v1/challenge", authMiddleware(makeHTTPHandleFunc(s.handleCreateChallenge))).Methods(http.MethodPost)
+	router.HandleFunc("/v1/challenge/{id}", makeHTTPHandleFunc(s.handleGetChallengeByID)).Methods(http.MethodGet)	
+	router.HandleFunc("/v1/challenge/{id}", authMiddleware(makeHTTPHandleFunc(s.handleUpdateChallenge))).Methods(http.MethodPut)
+	router.HandleFunc("/v1/challenge/{id}", authMiddleware(makeHTTPHandleFunc(s.handleDeleteChallenge))).Methods(http.MethodDelete)
 
 	router.HandleFunc("/v1/auth/github", makeHTTPHandleFunc(s.handleGithubAuth))
 	router.HandleFunc("/v1/auth/github/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback))
@@ -88,6 +114,14 @@ func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) error {
 	})
 }
 
+// health check
+//	@Summary		Health check
+//	@Description	Health check
+//	@Tags			health
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	map[string]string
+//	@Router			/v1/health [get]
 func (s *APIServer) handleHealth(w http.ResponseWriter, r *http.Request) error {
 	return WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
