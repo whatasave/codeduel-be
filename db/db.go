@@ -20,6 +20,12 @@ type DB interface {
 	GetUsers() ([]*types.User, error)
 	GetUserByID(int) (*types.User, error)
 
+	CreateChallenge(*types.Challenge) error
+	DeleteChallenge(int) error
+	UpdateChallenge(*types.Challenge) error
+	GetChallenges() (*[]types.Challenge, error)
+	GetChallengeByID(int) (*types.Challenge, error)
+
 	CreateAuth(*types.AuthEntry) error
 	GetAuthByProviderAndID(string, string) (*types.AuthEntry, error)
 }
@@ -29,15 +35,19 @@ type MariaDB struct {
 }
 
 func NewDB(host, port, user, pass, name string) (*MariaDB, error) {
-	dsn := user+":"+pass+"@tcp("+host+":"+port+")/"+name
+	dsn := user + ":" + pass + "@tcp(" + host + ":" + port + ")/" + name
 	pool, err := sql.Open("mysql", dsn)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, err
+	}
 
 	pool.SetConnMaxLifetime(0)
 	pool.SetMaxIdleConns(5)
 	pool.SetMaxOpenConns(5)
 
-	if err:= pool.Ping(); err != nil { return nil, err }
+	if err := pool.Ping(); err != nil {
+		return nil, err
+	}
 
 	var version string
 	pool.QueryRow("SELECT VERSION()").Scan(&version)
@@ -56,9 +66,11 @@ func InitOLD() {
 	dbName := os.Getenv("MARIADB_DATABASE")
 	var err error
 
-	dbConnectionUri := dbUser+":"+dbPass+"@/"+dbName
+	dbConnectionUri := dbUser + ":" + dbPass + "@/" + dbName
 	pool, err = sql.Open("mysql", dbConnectionUri)
-	if err != nil { log.Fatal("[DB] Unable to connect to the database:", err) }
+	if err != nil {
+		log.Fatal("[DB] Unable to connect to the database:", err)
+	}
 	defer pool.Close()
 
 	ctx, stop := context.WithCancel(context.Background())

@@ -1,21 +1,34 @@
 package db
 
 func (m *MariaDB) InitMatchTables() error {
-	if err := m.createStatusTable(); err != nil { return err }
-	if err := m.createMatchStatusTable(); err != nil { return err }
-	if err := m.createModeTable(); err != nil { return err }
-	if err := m.createLanguageTable(); err != nil { return err }
-	if err := m.createChallengeTable(); err != nil { return err }
-	
+	if err := m.createStatusTable(); err != nil {
+		return err
+	}
+	if err := m.createMatchStatusTable(); err != nil {
+		return err
+	}
+	if err := m.createModeTable(); err != nil {
+		return err
+	}
+	if err := m.createLanguageTable(); err != nil {
+		return err
+	}
+	if err := m.createChallengeTable(); err != nil {
+		return err
+	}
 
-	if err := m.createMatchTable(); err != nil { return err }
-	if err := m.createMatchUserLinkTable(); err != nil { return err }
+	if err := m.createMatchTable(); err != nil {
+		return err
+	}
+	if err := m.createMatchUserLinkTable(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func (m *MariaDB) createMatchTable() error {
-	query := `CREATE TABLE IF NOT EXISTS `+"`match`"+` (
+	query := `CREATE TABLE IF NOT EXISTS ` + "`match`" + ` (
 		id INT unique AUTO_INCREMENT,
 		owner_id INT NOT NULL,
 		challenge_id INT NOT NULL,
@@ -28,7 +41,7 @@ func (m *MariaDB) createMatchTable() error {
 		
 		PRIMARY KEY (id),
 		FOREIGN KEY (owner_id) REFERENCES user(id),
-		FOREIGN KEY (challenge_id) REFERENCES `+"`challenge`"+`(id),
+		FOREIGN KEY (challenge_id) REFERENCES ` + "`challenge`" + `(id),
 		FOREIGN KEY (mode_id) REFERENCES mode(id),
 		UNIQUE INDEX (id)
 	);`
@@ -45,33 +58,15 @@ func (m *MariaDB) createMatchUserLinkTable() error {
 		match_status_id INT NOT NULL,
 		code TEXT NOT NULL,
 		language_id INT NOT NULL,
-		`+"`rank`"+` INT NOT NULL,
+		` + "`rank`" + ` INT NOT NULL,
 		duration INT NOT NULL,
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		
 		PRIMARY KEY (id),
-		FOREIGN KEY (match_id) REFERENCES `+"`match`"+`(id),
+		FOREIGN KEY (match_id) REFERENCES ` + "`match`" + `(id),
 		FOREIGN KEY (user_id) REFERENCES user(id),
 		FOREIGN KEY (status_id) REFERENCES status(id),
-		UNIQUE INDEX (id)
-	);`
-	_, err := m.db.Exec(query)
-	return err
-}
-
-func (m *MariaDB) createChallengeTable() error {
-	query := `CREATE TABLE IF NOT EXISTS `+"`challenge`"+` (
-		id INT unique AUTO_INCREMENT,
-		owner_id INT NOT NULL,
-		title VARCHAR(50) NOT NULL,
-		description VARCHAR(255) NOT NULL,
-		content TEXT NOT NULL,
-		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-		
-		PRIMARY KEY (id),
-		FOREIGN KEY (owner_id) REFERENCES user(id),
 		UNIQUE INDEX (id)
 	);`
 	_, err := m.db.Exec(query)
@@ -88,7 +83,9 @@ func (m *MariaDB) createModeTable() error {
 		UNIQUE INDEX (id)
 	);`
 	_, err := m.db.Exec(query)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	queryDefaultValues := `INSERT IGNORE INTO mode
 	(id, name, description) VALUES	
@@ -112,7 +109,9 @@ func (m *MariaDB) createStatusTable() error {
 		UNIQUE INDEX (id)
 	);`
 	_, err := m.db.Exec(query)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	queryDefaultValues := `INSERT IGNORE INTO status
 	(id, name) VALUES	
@@ -134,7 +133,9 @@ func (m *MariaDB) createMatchStatusTable() error {
 		UNIQUE INDEX (id)
 	);`
 	_, err := m.db.Exec(query)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	queryDefaultValues := `INSERT IGNORE INTO status
 	(id, name) VALUES
@@ -154,7 +155,9 @@ func (m *MariaDB) createLanguageTable() error {
 		UNIQUE INDEX (id)
 	);`
 	_, err := m.db.Exec(query)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 
 	queryDefaultValues := `INSERT IGNORE INTO language
 	(id, name) VALUES
@@ -169,4 +172,3 @@ func (m *MariaDB) createLanguageTable() error {
 	_, err = m.db.Exec(queryDefaultValues)
 	return err
 }
-

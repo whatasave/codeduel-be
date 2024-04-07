@@ -25,7 +25,7 @@ COPY --from=build-stage /usr/src/app/bin /usr/local/bin
 COPY --from=build-stage /etc/passwd /etc/passwd
 
 USER 1001
-# USER nonroot:nonroot
+# USER codeduel-user:codeduel-user
 EXPOSE 5000
 
 ENTRYPOINT ["codeduel-be"]

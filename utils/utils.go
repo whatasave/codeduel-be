@@ -1,16 +1,20 @@
 package utils
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"time"
 )
 
-func GetEnv(key string) (string, error) {
+func GetEnv(key string, defaultValue string) string {
 	value, exists := os.LookupEnv(key)
-	if !exists { return "", fmt.Errorf("%s not defined in .env file", key) }
-
-	return value, nil
+	if !exists {
+		// fmt.Printf("Environment variable %s not found, using default value %s\n", key, defaultValue)
+		log.Printf("[WARN] Environment variable %s not found, using default value %s\n", key, defaultValue)
+		return defaultValue
+	}
+	
+	return value
 }
 
 func UnixTimeToTime(unixTime int64) time.Time {

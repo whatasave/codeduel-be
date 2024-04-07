@@ -1,0 +1,21 @@
+info:
+  contact: {}
+paths:
+  /v1/health:
+    get:
+      consumes:
+      - application/json
+      description: Health check
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - health
+swagger: "2.0"
