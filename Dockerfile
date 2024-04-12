@@ -21,6 +21,8 @@ RUN go test -v ./...
 # FROM scratch
 FROM gcr.io/distroless/base-debian11 AS release-stage
 
+ENV ENV=production
+
 # RUN apk add --no-cache ca-certificates
 COPY --from=build-stage /usr/src/app/bin /usr/local/bin
 # COPY --from=build-stage /usr/src/app/bin/.env /.env
