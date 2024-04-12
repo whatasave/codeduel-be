@@ -1,7 +1,6 @@
 FROM golang:1.21 as build-stage
 
-ENV BINARY_NAME=codeduel-be
-ENV ENV=production
+ENV GO_ENV=production
 
 RUN useradd -u 1001 -m codeduel-user
 
@@ -11,8 +10,7 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o ./bin/$BINARY_NAME -v
-
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./bin/codeduel-be -v
 
 FROM build-stage AS run-test-stage
 RUN go test -v ./...
