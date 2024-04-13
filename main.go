@@ -13,9 +13,9 @@ import (
 
 func main() {
   // loading env only if not in production
-  if utils.GetEnv("ENV", "development") != "production" {
+  if utils.GetEnv("ENV", "development") == "development" {
     if err := godotenv.Load(); err != nil {
-      log.Println("[MAIN] Error loading .env file")
+      log.Println("%s Error loading .env file", utils.GetLogTag("main"))
     }
   }
   config := config.LoadConfig()
@@ -27,10 +27,10 @@ func main() {
     config.MariaDBPassword,
     config.MariaDBDatabase,
   )
-  if err != nil { log.Printf("[MAIN] Error creating DB instance: %v", err) }
+  if err != nil { log.Printf("%s Error creating DB instance: %v", utils.GetLogTag("main"), err) }
   defer db.Close()
-  if err := db.InitUserTables(); err != nil { log.Printf("[MAIN] Error initializing DB user tables: %v", err) }
-  if err := db.InitMatchTables(); err != nil { log.Printf("[MAIN] Error initializing DB match tables: %v", err) }
+  if err := db.InitUserTables(); err != nil { log.Printf("%s Error initializing DB user tables: %v", utils.GetLogTag("main"), err) }
+  if err := db.InitMatchTables(); err != nil { log.Printf("%s Error initializing DB match tables: %v", utils.GetLogTag("main"), err) }
 
   server := api.NewAPIServer(config, db)
   server.Run()

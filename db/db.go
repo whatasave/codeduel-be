@@ -11,6 +11,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/xedom/codeduel/types"
+	"github.com/xedom/codeduel/utils"
 )
 
 type DB interface {
@@ -51,7 +52,7 @@ func NewDB(host, port, user, pass, name string) (*MariaDB, error) {
 
 	var version string
 	pool.QueryRow("SELECT VERSION()").Scan(&version)
-	log.Print("[DB] Connected to: ", version)
+	log.Printf("%s Connected to: %s", utils.GetLogTag("db"), version)
 
 	return &MariaDB{
 		db: pool,

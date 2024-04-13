@@ -38,7 +38,7 @@ func LoadConfig() *Config {
 
 		AuthGitHubClientID:              utils.GetEnv("AUTH_GITHUB_CLIENT_ID", ""),
 		AuthGitHubClientSecret:          utils.GetEnv("AUTH_GITHUB_CLIENT_SECRET", ""),
-		AuthGitHubClientCallbackURL:     utils.GetEnv("AUTH_GITHUB_CLIENT_CALLBACK_URL", "http://localhost:8080/auth/github/callback"),
+		AuthGitHubClientCallbackURL:     utils.GetEnv("AUTH_GITHUB_CLIENT_CALLBACK_URL", "http://localhost:5000/auth/github/callback"),
 
 		JWTSecret:                       utils.GetEnv("JWT_SECRET", "yoooSuperSecret"),
 	}

@@ -36,8 +36,8 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 
 func NewAPIServer(config *config.Config, db db.DB) *APIServer {
 	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	log.Print("[API] Starting API server on http://", address)
-	log.Print("[API] Docs http://localhost:5000/docs/index.html")
+	log.Printf("%s Starting API server on http://%s", utils.GetLogTag("main"), address)
+	log.Printf("%s Docs http://localhost:5000/docs/index.html", utils.GetLogTag("main"))
 	return &APIServer{
 		config:     config,
 		db:         db,
@@ -130,6 +130,7 @@ func makeHTTPHandleFunc(fn apiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := fn(w, r); err != nil {
 			// http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("%s%s Endpoint: %s Error: %s", utils.GetLogTag("api"), utils.GetLogTag("error"), r.RequestURI, err.Error())
 			WriteJSON(w, http.StatusInternalServerError, ApiError{Err: err.Error()})
 		}
 	}
