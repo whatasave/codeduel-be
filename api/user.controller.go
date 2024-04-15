@@ -118,7 +118,7 @@ func (s *APIServer) handleValidateToken(w http.ResponseWriter, r *http.Request) 
 	return WriteJSON(w, http.StatusOK, decodedUserData)
 }
 
-func GetAuthUser(r *http.Request, db db.DB) (*types.User, error) {
+func GetAuthUser(r *http.Request, db db.DB) (*types.ProfileResponse, error) {
 	headerUserID := r.Header.Get("x-user-id")
 	userID, err := strconv.Atoi(headerUserID)
 	if err != nil {
@@ -130,5 +130,15 @@ func GetAuthUser(r *http.Request, db db.DB) (*types.User, error) {
 		return nil, err
 	}
 	
-	return user, nil
+	userStats, err := db.GetUserStats(userID)
+	if err != nil {
+		return nil, err
+	}
+	
+	profile := &types.ProfileResponse{
+		Stats: userStats,
+		User: user,
+	}
+	
+	return profile, nil
 }

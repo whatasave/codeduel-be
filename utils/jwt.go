@@ -23,7 +23,7 @@ func ValidateUserJWT(tokenString string) (*types.UserRequestHeader, error) {
 		ID:       int(claims["sub"].(float64)),
 		Username: claims["username"].(string),
 		Email:    claims["email"].(string),
-		ImageURL: claims["imageURL"].(string),
+		Avatar:   claims["avatar"].(string),
 		// Role: claims["role"].(string),
 		ExpiresAt: int64(claims["exp"].(float64)),
 	}
@@ -62,7 +62,7 @@ func CreateJWT(user *types.User) (*JWT, error) {
 		// custom claims
 		"username": user.Username,
 		"email":    user.Email,
-		"imageURL": user.ImageURL,
+		"avatar": user.Avatar,
 		// "role": user.Role,
 	}
 

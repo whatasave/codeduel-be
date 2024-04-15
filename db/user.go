@@ -8,10 +8,10 @@ import (
 )
 
 func (m *MariaDB) CreateUser(user *types.User) error {
-	query := `INSERT INTO user (username, email, image_url)
+	query := `INSERT INTO user (username, email, avatar)
 		VALUES (?, ?, ?);
 	;`
-	_, err := m.db.Exec(query, user.Username, user.Email, user.ImageURL)
+	_, err := m.db.Exec(query, user.Username, user.Email, user.Avatar)
 	if err != nil {
 		return err
 	}
@@ -96,8 +96,8 @@ func (m *MariaDB) DeleteUser(id int) error {
 }
 
 func (m *MariaDB) UpdateUser(user *types.User) error {
-	query := `UPDATE user SET username = ?, email = ?, image_url = ? WHERE id = ?;`
-	res, err := m.db.Exec(query, user.Username, user.Email, user.ImageURL, user.ID)
+	query := `UPDATE user SET username = ?, email = ?, avatar = ? WHERE id = ?;`
+	res, err := m.db.Exec(query, user.Username, user.Email, user.Avatar, user.ID)
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
 	query := `SELECT * FROM user WHERE id = ?;`
 	rows, err := m.db.Query(query, id)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("DB(GetUserByID): %s", err.Error())
 	}
 	defer rows.Close()
 
@@ -143,10 +143,49 @@ func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
 		return m.parseUser(rows)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("DB(GetUserByID): %s", err.Error())
 	}
 
 	return nil, fmt.Errorf("user with id %d not found", id)
+}
+
+func (m *MariaDB) GetUserStats(id int) ([]*types.UserStatsParsed, error) {
+	// query := `SELECT * FROM user_stats WHERE user_id = ?;`
+	query := `SELECT
+		user_stats.id,
+		stats.name,
+		user_stats.stat,
+		user_stats.created_at,
+		user_stats.updated_at
+	FROM user_stats
+	JOIN stats ON user_stats.stats_id = stats.id
+	WHERE user_id = ?;`;
+	rows, err := m.db.Query(query, id)
+	if err != nil {
+		return nil, fmt.Errorf("DB(GetUserStats:0): %s", err.Error())
+	}
+	defer rows.Close()
+
+	var stats []*types.UserStatsParsed
+
+	for rows.Next() {
+		stat := &types.UserStatsParsed{}
+		if err := rows.Scan(
+			&stat.ID,
+			&stat.Name,
+			&stat.Stat,
+			&stat.CreatedAt,
+			&stat.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("DB(GetUserStats:1): %s", err.Error())
+		}
+		stats = append(stats, stat)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("DB(GetUserStats:2): %s", err.Error())
+	}
+
+	return stats, nil
 }
 
 func (m *MariaDB) InitUserTables() error {
@@ -154,6 +193,12 @@ func (m *MariaDB) InitUserTables() error {
 		return err
 	}
 	if err := m.createAuthTable(); err != nil {
+		return err
+	}
+	if err := m.createStatsTable(); err != nil {
+		return err
+	}
+	if err := m.createUserStatsTable(); err != nil {
 		return err
 	}
 
@@ -164,8 +209,11 @@ func (m *MariaDB) createUserTable() error {
 	query := `CREATE TABLE IF NOT EXISTS user (
 		id INT unique AUTO_INCREMENT,
 		username VARCHAR(50) NOT NULL,
+		name VARCHAR(50) DEFAULT '',
 		email VARCHAR(50) NOT NULL,
-		image_url VARCHAR(255),
+		avatar VARCHAR(255),
+		background_img VARCHAR(255) DEFAULT '',
+		bio TEXT DEFAULT (''),
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		PRIMARY KEY (id),
@@ -191,21 +239,65 @@ func (m *MariaDB) createAuthTable() error {
 	return err
 }
 
+func (m *MariaDB) createUserStatsTable() error {
+	query := `CREATE TABLE IF NOT EXISTS user_stats (
+		id INT AUTO_INCREMENT,
+		user_id INT NOT NULL,
+		stats_id INT NOT NULL,
+		stat VARCHAR(50) NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		PRIMARY KEY (id),
+		FOREIGN KEY (user_id) REFERENCES user(id),
+		FOREIGN KEY (stats_id) REFERENCES stats(id)
+	);`
+	_, err := m.db.Exec(query)
+	return err
+}
+
+func (m *MariaDB) createStatsTable() error {
+	query := `CREATE TABLE IF NOT EXISTS stats (
+		id INT AUTO_INCREMENT,
+		name VARCHAR(50) NOT NULL,
+		PRIMARY KEY (id),
+		UNIQUE INDEX (name)
+	);`
+	_, err := m.db.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	defaultStats := []string{"Games", "Wins", "Top 3"}
+
+	for _, stat := range defaultStats {
+		query := `INSERT INTO stats (name) VALUES (?);`
+		_, err := m.db.Exec(query, stat)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (m *MariaDB) parseUser(row *sql.Rows) (*types.User, error) {
 	user := &types.User{}
-	user_image_url := sql.NullString{}
+	user_avatar := sql.NullString{}
 	if err := row.Scan(
 		&user.ID,
 		&user.Username,
+		&user.Name,
 		&user.Email,
-		&user_image_url,
+		&user_avatar,
+		&user.BackgroundImg,
+		&user.Bio,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
-	if user_image_url.Valid {
-		user.ImageURL = user_image_url.String
+	if user_avatar.Valid {
+		user.Avatar = user_avatar.String
 	}
 
 	return user, nil

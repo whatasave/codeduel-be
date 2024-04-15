@@ -20,6 +20,7 @@ type DB interface {
 	UpdateUser(*types.User) error
 	GetUsers() ([]*types.User, error)
 	GetUserByID(int) (*types.User, error)
+	GetUserStats(int) ([]*types.UserStatsParsed, error)
 
 	CreateChallenge(*types.Challenge) error
 	DeleteChallenge(int) error

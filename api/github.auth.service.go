@@ -51,7 +51,7 @@ func RegisterGithubUser(db db.DB, githubUser *types.GithubUser) (*types.User, er
 	user := &types.User{
 		Username: githubUser.Login,
 		Email:    githubUser.Email,
-		ImageURL: githubUser.AvatarUrl,
+		Avatar: githubUser.AvatarUrl,
 	}
 	err := db.CreateUser(user)
 	if err != nil {
