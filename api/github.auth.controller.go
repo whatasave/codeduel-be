@@ -104,12 +104,12 @@ func (s *APIServer) handleGithubAuthGetRequest(w http.ResponseWriter, r *http.Re
 	cookie := &http.Cookie{
 		Name:    "jwt",
 		Value:   token.Jwt,
-		Domain:  s.config.Host, // TODO may cause problems
-		Path:    "/",
+		Domain:  s.config.CookieDomain,
+		Path:    s.config.CookiePath,
 		Expires: utils.UnixTimeToTime(token.ExpiresAt),
 		// MaxAge: 86400,
-		HttpOnly: true,
-		Secure:   false,
+		HttpOnly: s.config.CookieHTTPOnly, //true,
+		Secure:   s.config.CookieSecure, //false,
 		// SameSite: http.SameSiteStrictMode,
 		// SameSite: http.SameSiteNoneMode,
 		SameSite: http.SameSiteLaxMode,
