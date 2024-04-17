@@ -56,3 +56,12 @@ type ProfileResponse struct {
 	*User
 	Stats []*UserStatsParsed `json:"stats"`
 }
+
+type UserResponse struct {
+	Name            string `json:"name"`
+	Username        string `json:"username"`
+	Avatar          string `json:"avatar"`
+	BackgroundImg   string `json:"background_img"`
+	Bio             string `json:"bio"`
+	CreatedAt       string `json:"created_at"`
+}

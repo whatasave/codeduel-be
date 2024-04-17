@@ -108,17 +108,17 @@ func (m *MariaDB) UpdateUser(user *types.User) error {
 	return err
 }
 
-func (m *MariaDB) GetUsers() ([]*types.User, error) {
-	query := `SELECT * FROM user;`
+func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
+	query := `SELECT user.name, username, avatar, background_img, bio, created_at FROM user;`
 	rows, err := m.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var users []*types.User
+	var users []*types.UserResponse
 	for rows.Next() {
-		user, err := m.parseUser(rows)
+		user, err := m.parseUserResponse(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -288,11 +288,31 @@ func (m *MariaDB) parseUser(row *sql.Rows) (*types.User, error) {
 		&user.Username,
 		&user.Name,
 		&user.Email,
-		&user_avatar,
+		&user.Avatar,
 		&user.BackgroundImg,
 		&user.Bio,
 		&user.CreatedAt,
 		&user.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	if user_avatar.Valid {
+		user.Avatar = user_avatar.String
+	}
+
+	return user, nil
+}
+
+func (m *MariaDB) parseUserResponse(row *sql.Rows) (*types.UserResponse, error) {
+	user := &types.UserResponse{}
+	user_avatar := sql.NullString{}
+	if err := row.Scan(
+		&user.Name,
+		&user.Username,
+		&user.Avatar,
+		&user.BackgroundImg,
+		&user.Bio,
+		&user.CreatedAt,
 	); err != nil {
 		return nil, err
 	}

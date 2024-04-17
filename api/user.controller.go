@@ -25,7 +25,6 @@ func (s *APIServer) handleUser(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (s *APIServer) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
-	log.Print("[API] Fetching users")
 	users, err := s.db.GetUsers()
 	if err != nil {
 		return err

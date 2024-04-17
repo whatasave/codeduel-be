@@ -18,7 +18,7 @@ type DB interface {
 	CreateUser(*types.User) error
 	DeleteUser(int) error
 	UpdateUser(*types.User) error
-	GetUsers() ([]*types.User, error)
+	GetUsers() ([]*types.UserResponse, error)
 	GetUserByID(int) (*types.User, error)
 	GetUserStats(int) ([]*types.UserStatsParsed, error)
 
