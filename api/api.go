@@ -10,10 +10,11 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/db"
+	"github.com/xedom/codeduel/docs"
 	"github.com/xedom/codeduel/utils"
 
-	_ "github.com/swaggo/http-swagger/example/gorilla/docs"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
+	_ "github.com/xedom/codeduel/docs"
 )
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
@@ -45,42 +46,61 @@ func NewAPIServer(config *config.Config, db db.DB) *APIServer {
 	}
 }
 
-//	@title						CodeDuel API
-//	@version					1.0
-//	@description				Backend API for CodeDuel
+// https://github.com/swaggo/swag?tab=readme-ov-file#general-api-info
+
+//	@title			CodeDuel API
+//	@version		1.0
+//	@description	Backend API for CodeDuel
+//	@termsOfService	http://swagger.io/terms/
+
+//	@securityDefinitions.basic	BasicAuth
+
 //	@securityDefinitions.apiKey	JWT
 //	@in							header
 //	@name						token
-//	@termsOfService				http://swagger.io/terms/
-//	@contact.name				API Support
-//	@contact.email				support@codeduel
-//	@license.name				Apache 2.0
-//	@license.url				http://www.apache.org/licenses/LICENSE-2.0.html
-//	@host						localhost:5000
-//	@schemes					http 
-//	@BasePath					/v1/
+//	@description				Authorization token
+
+
+//	@contact.name	API Support
+//	@contact.url	http://www.swagger.io/support
+//	@contact.email	support@codeduel
+
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+//	@externalDocs.description	OpenAPI
+//	@externalDocs.url			https://swagger.io/resources/open-api/
+
+//	@host		127.0.0.1:5000
+//	@schemes	http
+//	@basePath	/v1
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
-	
-	router.PathPrefix("/docs").Handler(httpSwagger.WrapHandler).Methods(http.MethodGet)
+
+	docs.SwaggerInfo.Host = s.config.Host + ":" + s.config.Port
+	httpSwagger.URL("http://" + s.config.Host + ":" + s.config.Port + "/docs/swagger.json")
+
+	router.PathPrefix("/docs").Handler(httpSwagger.WrapHandler)
 
 	router.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))
 
-	router.HandleFunc("/v1/health", makeHTTPHandleFunc(s.handleHealth))
-	router.HandleFunc("/v1/validateToken", makeHTTPHandleFunc(s.handleValidateToken)) // TODO: make it accessible only by lobby service
+	router.HandleFunc("/v1/health", makeHTTPHandleFunc(s.handleHealth)).Methods(http.MethodGet)
+	router.HandleFunc("/v1/validateToken", makeHTTPHandleFunc(s.handleValidateToken)).Methods(http.MethodPost) // TODO: make it accessible only by lobby service
 
-	router.HandleFunc("/v1/user", makeHTTPHandleFunc(s.handleUser))
-	router.HandleFunc("/v1/user/{id}", makeHTTPHandleFunc(s.handleUserByID))
-	router.HandleFunc("/v1/profile", authMiddleware(makeHTTPHandleFunc(s.handleProfile)))
+	router.HandleFunc("/v1/user", makeHTTPHandleFunc(s.handleGetUsers)).Methods(http.MethodGet)
+	router.HandleFunc("/v1/user", makeHTTPHandleFunc(s.handleCreateUser)).Methods(http.MethodPost)
+	router.HandleFunc("/v1/user/{username}", makeHTTPHandleFunc(s.handleGetUserByUsername)).Methods(http.MethodGet)
+	router.HandleFunc("/v1/user/{username}", authMiddleware(makeHTTPHandleFunc(s.handleDeleteUserByUsername))).Methods(http.MethodDelete)
+	router.HandleFunc("/v1/profile", authMiddleware(makeHTTPHandleFunc(s.handleProfile))).Methods(http.MethodGet)
 
 	router.HandleFunc("/v1/challenge", makeHTTPHandleFunc(s.handleGetChallenges)).Methods(http.MethodGet)
-	router.HandleFunc("/v1/challenge", authMiddleware(makeHTTPHandleFunc(s.handleCreateChallenge))).Methods(http.MethodPost)
 	router.HandleFunc("/v1/challenge/{id}", makeHTTPHandleFunc(s.handleGetChallengeByID)).Methods(http.MethodGet)	
+	router.HandleFunc("/v1/challenge", authMiddleware(makeHTTPHandleFunc(s.handleCreateChallenge))).Methods(http.MethodPost)
 	router.HandleFunc("/v1/challenge/{id}", authMiddleware(makeHTTPHandleFunc(s.handleUpdateChallenge))).Methods(http.MethodPut)
 	router.HandleFunc("/v1/challenge/{id}", authMiddleware(makeHTTPHandleFunc(s.handleDeleteChallenge))).Methods(http.MethodDelete)
 
-	router.HandleFunc("/v1/auth/github", makeHTTPHandleFunc(s.handleGithubAuth))
-	router.HandleFunc("/v1/auth/github/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback))
+	router.HandleFunc("/v1/auth/github", makeHTTPHandleFunc(s.handleGithubAuth)).Methods(http.MethodGet)
+	router.HandleFunc("/v1/auth/github/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback)).Methods(http.MethodGet)
 
 	err := http.ListenAndServe(s.listenAddr, handlers.CORS(
 		handlers.AllowedOrigins([]string{s.config.FrontendURL}),
@@ -96,27 +116,18 @@ func (s *APIServer) Run() {
 
 func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) error {
 	host := fmt.Sprintf("http://%s", r.Host)
+	swaggerUrl := fmt.Sprintf("%s/docs/index.html", host)
 
 	return WriteJSON(w, http.StatusOK, map[string]any{
 		"message": "Welcome to CodeDuel API",
 		"version": "v1",
 		"status":  "ok",
-		"apis": []string{
-			fmt.Sprintf("%s/v1", host),
-			fmt.Sprintf("%s/v1/health", host),
-			fmt.Sprintf("%s/v1/user", host),
-			fmt.Sprintf("%s/v1/user/{id}", host),
-			fmt.Sprintf("%s/v1/profile", host),
-			// fmt.Sprintf("%s/v1/lobbies", host),
-			fmt.Sprintf("%s/v1/auth/github", host),
-			fmt.Sprintf("%s/v1/auth/github/callback", host),
-		},
+		"apis": swaggerUrl,
 	})
 }
 
-// health check
 //	@Summary		Health check
-//	@Description	Health check
+//	@Description	Health check endpoint
 //	@Tags			health
 //	@Accept			json
 //	@Produce		json

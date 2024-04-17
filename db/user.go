@@ -95,6 +95,20 @@ func (m *MariaDB) DeleteUser(id int) error {
 	return err
 }
 
+func (m *MariaDB) DeleteUserByUsername(username string) error {
+	query := `DELETE FROM user WHERE username = ?;`
+	res, err := m.db.Exec(query, username)
+
+	if err != nil {
+		return err
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return fmt.Errorf("DB(DeleteUserByUsername): user with id %s not found", username)
+	}
+
+	return err
+}
+
 func (m *MariaDB) UpdateUser(user *types.User) error {
 	query := `UPDATE user SET username = ?, email = ?, avatar = ? WHERE id = ?;`
 	res, err := m.db.Exec(query, user.Username, user.Email, user.Avatar, user.ID)
@@ -146,7 +160,25 @@ func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
 		return nil, fmt.Errorf("DB(GetUserByID): %s", err.Error())
 	}
 
-	return nil, fmt.Errorf("user with id %d not found", id)
+	return nil, fmt.Errorf("DB(GetUserByID): user with id %d not found", id)
+}
+
+func (m *MariaDB) GetUserByUsername(username string) (*types.User, error) {
+	query := `SELECT * FROM user WHERE username = ?;`
+	rows, err := m.db.Query(query, username)
+	if err != nil {
+		return nil, fmt.Errorf("DB(GetUserByUsername): %s", err.Error())
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		return m.parseUser(rows)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("DB(GetUserByUsername): %s", err.Error())
+	}
+
+	return nil, fmt.Errorf("DB(GetUserByUsername): user with username %s not found", username)
 }
 
 func (m *MariaDB) GetUserStats(id int) ([]*types.UserStatsParsed, error) {
@@ -259,7 +291,9 @@ func (m *MariaDB) createStatsTable() error {
 	query := `CREATE TABLE IF NOT EXISTS stats (
 		id INT AUTO_INCREMENT,
 		name VARCHAR(50) NOT NULL,
+
 		PRIMARY KEY (id),
+		UNIQUE INDEX (id),
 		UNIQUE INDEX (name)
 	);`
 	_, err := m.db.Exec(query)
@@ -270,7 +304,7 @@ func (m *MariaDB) createStatsTable() error {
 	defaultStats := []string{"Games", "Wins", "Top 3"}
 
 	for _, stat := range defaultStats {
-		query := `INSERT INTO stats (name) VALUES (?);`
+		query := `INSERT IGNORE INTO stats (name) VALUES (?);`
 		_, err := m.db.Exec(query, stat)
 		if err != nil {
 			return err

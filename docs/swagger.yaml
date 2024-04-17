@@ -1,11 +1,321 @@
+basePath: /v1
+definitions:
+  api.ApiError:
+    properties:
+      error:
+        type: string
+    type: object
+  types.ChallengeListResponse:
+    properties:
+      challenges:
+        items:
+          $ref: '#/definitions/types.ChallengeResponse'
+        type: array
+    type: object
+  types.ChallengeResponse:
+    properties:
+      content:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      owner_id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  types.CreateChallengeRequest:
+    properties:
+      content:
+        type: string
+      description:
+        type: string
+      title:
+        type: string
+    type: object
+  types.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      username:
+        type: string
+    type: object
+  types.ProfileResponse:
+    properties:
+      avatar:
+        type: string
+      background_img:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      stats:
+        items:
+          $ref: '#/definitions/types.UserStatsParsed'
+        type: array
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  types.User:
+    properties:
+      avatar:
+        type: string
+      background_img:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  types.UserResponse:
+    properties:
+      avatar:
+        type: string
+      background_img:
+        type: string
+      bio:
+        type: string
+      created_at:
+        type: string
+      name:
+        type: string
+      username:
+        type: string
+    type: object
+  types.UserStatsParsed:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      stat:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  types.VerifyToken:
+    properties:
+      token:
+        type: string
+    type: object
+externalDocs:
+  description: OpenAPI
+  url: https://swagger.io/resources/open-api/
+host: 127.0.0.1:5000
 info:
-  contact: {}
+  contact:
+    email: support@codeduel
+    name: API Support
+    url: http://www.swagger.io/support
+  description: Backend API for CodeDuel
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: CodeDuel API
+  version: "1.0"
 paths:
+  /challenge:
+    get:
+      consumes:
+      - application/json
+      description: Get all challenges
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ChallengeListResponse'
+      summary: Get all challenges
+      tags:
+      - challenge
+    post:
+      consumes:
+      - application/json
+      description: Create a new challenge
+      parameters:
+      - description: Create Challenge Request
+        in: body
+        name: challenge
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateChallengeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ChallengeResponse'
+      summary: Create a new challenge
+      tags:
+      - challenge
+  /github/auth:
+    get:
+      description: Endpoint to login with Github OAuth, it will redirect to Github
+        OAuth page to authenticate
+      responses:
+        "302":
+          description: Found
+      summary: Login with Github
+      tags:
+      - auth
+  /github/auth/callback:
+    get:
+      description: Endpoint to handle Github OAuth callback, it will exchange code
+        for access token and get user data from Github, then it will register a new
+        user or login the user if it already exists. It will set a cookie with JWT
+        token and redirect to frontend with the JWT token as a query parameter.
+      responses:
+        "302":
+          description: Found
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ApiError'
+      summary: Github Auth Callback
+      tags:
+      - auth
+  /profile:
+    get:
+      description: Get user profile when authenticated with JWT in the cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ProfileResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ApiError'
+      security:
+      - CookieAuth: []
+      summary: Get Profile
+      tags:
+      - user
+  /user:
+    get:
+      description: Get all users from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.UserResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ApiError'
+      summary: Get all users
+      tags:
+      - user
+    post:
+      consumes:
+      - application/json
+      description: Create a new user in the database
+      parameters:
+      - description: Create User Request
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.User'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ApiError'
+      summary: Create a new user
+      tags:
+      - user
+  /user/{username}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete user by username from the database
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ApiError'
+      summary: Delete user by username
+      tags:
+      - user
+    get:
+      description: Get user by username from the database
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.User'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ApiError'
+      summary: Get user by username
+      tags:
+      - user
   /v1/health:
     get:
       consumes:
       - application/json
-      description: Health check
+      description: Health check endpoint
       produces:
       - application/json
       responses:
@@ -18,4 +328,41 @@ paths:
       summary: Health check
       tags:
       - health
+  /validateToken:
+    post:
+      consumes:
+      - application/json
+      description: Validate if the user JWT token is valid, and return user data.
+        Used from other services to validate user token
+      parameters:
+      - description: Service token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/types.VerifyToken'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.User'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ApiError'
+      summary: Validate JWT Token
+      tags:
+      - user
+schemes:
+- http
+securityDefinitions:
+  BasicAuth:
+    type: basic
+  JWT:
+    description: Authorization token
+    in: header
+    name: token
+    type: apiKey
 swagger: "2.0"

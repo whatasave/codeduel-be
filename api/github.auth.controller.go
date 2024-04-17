@@ -8,40 +8,37 @@ import (
 	"github.com/xedom/codeduel/utils"
 )
 
+//	@Summary		Login with Github
+//	@Description	Endpoint to login with Github OAuth, it will redirect to Github OAuth page to authenticate
+//	@Tags			auth
+//	@Success		302
+//	@Router			/github/auth [get]
 func (s *APIServer) handleGithubAuth(w http.ResponseWriter, r *http.Request) error {
-	if r.Method == "GET" {
-		// redirect to github auth
-		urlParams := r.URL.Query()
+	urlParams := r.URL.Query()
 
-		redirect := "https://github.com/login/oauth/authorize"
+	redirect := "https://github.com/login/oauth/authorize"
 
-		urlParams.Add("client_id", s.config.AuthGitHubClientID)
-		urlParams.Add("redirect_uri", s.config.AuthGitHubClientCallbackURL)
-		urlParams.Add("return_to", "/frontend")
-		urlParams.Add("response_type", "code")
-		urlParams.Add("scope", "user:email")
-		urlParams.Add("state", "an_unguessable_random_string") // TODO: JWT It is used to protect against cross-site request forgery attacks.
-		urlParams.Add("allow_signup", "true")
-		encodedParams := urlParams.Encode()
+	urlParams.Add("client_id", s.config.AuthGitHubClientID)
+	urlParams.Add("redirect_uri", s.config.AuthGitHubClientCallbackURL)
+	urlParams.Add("return_to", "/frontend")
+	urlParams.Add("response_type", "code")
+	urlParams.Add("scope", "user:email")
+	urlParams.Add("state", "an_unguessable_random_string") // TODO: JWT It is used to protect against cross-site request forgery attacks.
+	urlParams.Add("allow_signup", "true")
+	encodedParams := urlParams.Encode()
 
-		url := fmt.Sprintf("%s?%s", redirect, encodedParams)
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-		return nil
-	}
-
-	return fmt.Errorf("method not allowed %s", r.Method)
+	url := fmt.Sprintf("%s?%s", redirect, encodedParams)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	return nil
 }
 
+//	@Summary		Github Auth Callback
+//	@Description	Endpoint to handle Github OAuth callback, it will exchange code for access token and get user data from Github, then it will register a new user or login the user if it already exists. It will set a cookie with JWT token and redirect to frontend with the JWT token as a query parameter.
+//	@Tags			auth
+//	@Success		302
+//	@Failure		500	{object}	ApiError
+//	@Router			/github/auth/callback [get]
 func (s *APIServer) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request) error {
-	if r.Method == "GET" {
-		return s.handleGithubAuthGetRequest(w, r)
-	}
-
-	return fmt.Errorf("method not allowed %s", r.Method)
-}
-
-func (s *APIServer) handleGithubAuthGetRequest(w http.ResponseWriter, r *http.Request) error {
-
 	urlParams := r.URL.Query()
 	if !urlParams.Has("code") || !urlParams.Has("state") {
 		return fmt.Errorf("code or state is empty")
@@ -124,4 +121,3 @@ func (s *APIServer) handleGithubAuthGetRequest(w http.ResponseWriter, r *http.Re
 
 	return nil
 }
-

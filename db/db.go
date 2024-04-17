@@ -15,21 +15,23 @@ import (
 )
 
 type DB interface {
-	CreateUser(*types.User) error
-	DeleteUser(int) error
-	UpdateUser(*types.User) error
 	GetUsers() ([]*types.UserResponse, error)
 	GetUserByID(int) (*types.User, error)
+	GetUserByUsername(string) (*types.User, error)
 	GetUserStats(int) ([]*types.UserStatsParsed, error)
+	CreateUser(*types.User) error
+	UpdateUser(*types.User) error
+	DeleteUser(int) error
+	DeleteUserByUsername(string) error
 
-	CreateChallenge(*types.Challenge) error
-	DeleteChallenge(int) error
-	UpdateChallenge(*types.Challenge) error
 	GetChallenges() (*[]types.Challenge, error)
 	GetChallengeByID(int) (*types.Challenge, error)
+	CreateChallenge(*types.Challenge) error
+	UpdateChallenge(*types.Challenge) error
+	DeleteChallenge(int) error
 
-	CreateAuth(*types.AuthEntry) error
 	GetAuthByProviderAndID(string, string) (*types.AuthEntry, error)
+	CreateAuth(*types.AuthEntry) error
 }
 
 type MariaDB struct {

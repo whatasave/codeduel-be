@@ -13,17 +13,13 @@ import (
 	"github.com/xedom/codeduel/utils"
 )
 
-func (s *APIServer) handleUser(w http.ResponseWriter, r *http.Request) error {
-	if r.Method == "GET" {
-		return s.handleGetUsers(w, r)
-	}
-	if r.Method == "POST" {
-		return s.handleCreateUser(w, r)
-	}
-
-	return fmt.Errorf("method not allowed %s", r.Method)
-}
-
+//	@Summary		Get all users
+//	@Description	Get all users from the database
+//	@Tags			user
+//	@Produce		json
+//	@Success		200	{object}	[]types.UserResponse
+//	@Failure		500	{object}	ApiError
+//	@Router			/user [get]
 func (s *APIServer) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
 	users, err := s.db.GetUsers()
 	if err != nil {
@@ -33,33 +29,15 @@ func (s *APIServer) handleGetUsers(w http.ResponseWriter, _ *http.Request) error
 	return WriteJSON(w, http.StatusOK, users)
 }
 
-func (s *APIServer) handleUserByID(w http.ResponseWriter, r *http.Request) error {
-	if r.Method == "GET" {
-		return s.handleGetUserByID(w, r)
-	}
-	if r.Method == "DELETE" {
-		return s.handleDeleteUserByID(w, r)
-	}
-
-	return fmt.Errorf("method not allowed %s", r.Method)
-}
-
-func (s *APIServer) handleGetUserByID(w http.ResponseWriter, r *http.Request) error {
-	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		return err
-	}
-
-	log.Print("[API] Fetching user ", id)
-	user, err := s.db.GetUserByID(id)
-	if err != nil {
-		return err
-	}
-
-	return WriteJSON(w, http.StatusOK, user)
-}
-
+//	@Summary		Create a new user
+//	@Description	Create a new user in the database
+//	@Tags			user
+//	@Accept			json
+//	@Produce		json
+//	@Param			user	body		types.CreateUserRequest	true	"Create User Request"
+//	@Success		200		{object}	types.User
+//	@Failure		500		{object}	ApiError
+//	@Router			/user [post]
 func (s *APIServer) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
 	createUserReq := &types.CreateUserRequest{}
 	if err := json.NewDecoder(r.Body).Decode(createUserReq); err != nil {
@@ -78,17 +56,50 @@ func (s *APIServer) handleCreateUser(w http.ResponseWriter, r *http.Request) err
 	return WriteJSON(w, http.StatusOK, user)
 }
 
-func (s *APIServer) handleDeleteUserByID(_ http.ResponseWriter, r *http.Request) error {
+//	@Summary		Get user by username
+//	@Description	Get user by username from the database
+//	@Tags			user
+//	@Produce		json
+//	@Param			username	path		string	true	"Username"
+//	@Success		200			{object}	types.User
+//	@Failure		500			{object}	ApiError
+//	@Router			/user/{username} [get]
+func (s *APIServer) handleGetUserByUsername(w http.ResponseWriter, r *http.Request) error {
 	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
+	username := params["username"]
+	log.Print("[API] Fetching user ", username)
+	user, err := s.db.GetUserByUsername(username)
 	if err != nil {
 		return err
 	}
 
-	log.Print("[API] Deleting user ", id)
-	return s.db.DeleteUser(id)
+	return WriteJSON(w, http.StatusOK, user)
 }
 
+//	@Summary		Delete user by username
+//	@Description	Delete user by username from the database
+//	@Tags			user
+//	@Accept			json
+//	@Produce		json
+//	@Param			username	path	string	true	"Username"
+//	@Success		200
+//	@Failure		500	{object}	ApiError
+//	@Router			/user/{username} [delete]
+func (s *APIServer) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Request) error {
+	params := mux.Vars(r)
+	username := params["username"]
+	log.Print("[API] Deleting user ", username)
+	return s.db.DeleteUserByUsername(username)
+}
+
+//	@Summary		Get Profile
+//	@Description	Get user profile when authenticated with JWT in the cookie
+//	@Tags			user
+//	@Produce		json
+//	@Success		200	{object}	types.ProfileResponse
+//	@Failure		500	{object}	ApiError
+//	@Security		CookieAuth
+//	@Router			/profile [get]
 func (s *APIServer) handleProfile(w http.ResponseWriter, r *http.Request) error {
 	user, err := GetAuthUser(r, s.db)
 	if err != nil {
@@ -98,6 +109,15 @@ func (s *APIServer) handleProfile(w http.ResponseWriter, r *http.Request) error 
 	return WriteJSON(w, http.StatusOK, user)
 }
 
+//	@Summary		Validate JWT Token
+//	@Description	Validate if the user JWT token is valid, and return user data. Used from other services to validate user token
+//	@Tags			user
+//	@Accept			json
+//	@Produce		json
+//	@Param			token	body		types.VerifyToken	true	"Service token"
+//	@Success		200		{object}	types.User
+//	@Failure		500		{object}	ApiError
+//	@Router			/validateToken [post]
 func (s *APIServer) handleValidateToken(w http.ResponseWriter, r *http.Request) error {
 	verifyTokenBody := &types.VerifyToken{}
 	if err := json.NewDecoder(r.Body).Decode(verifyTokenBody); err != nil {

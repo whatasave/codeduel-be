@@ -10,13 +10,13 @@ import (
 	"github.com/xedom/codeduel/types"
 )
 
-// @Summary Get all challenges
-// @Description Get all challenges
-// @Tags challenge
-// @Accept json
-// @Produce json
-// @Success 200 {object} ChallengeListResponse
-// @Router /v1/challenge [get]
+//	@Summary		Get all challenges
+//	@Description	Get all challenges
+//	@Tags			challenge
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	types.ChallengeListResponse
+//	@Router			/challenge [get]
 func (s *APIServer) handleGetChallenges(w http.ResponseWriter, _ *http.Request) error {
 	challenges, err := s.db.GetChallenges()
 	if err != nil {
@@ -26,14 +26,14 @@ func (s *APIServer) handleGetChallenges(w http.ResponseWriter, _ *http.Request) 
 	return WriteJSON(w, http.StatusOK, challenges)
 }
 
-// @Summary Create a new challenge
-// @Description Create a new challenge
-// @Tags challenge
-// @Accept json
-// @Produce json
-// @Param challenge body CreateChallengeRequest true "Create Challenge Request"
-// @Success 200 {object} ChallengeResponse
-// @Router /v1/challenge [post]
+//	@Summary		Create a new challenge
+//	@Description	Create a new challenge
+//	@Tags			challenge
+//	@Accept			json
+//	@Produce		json
+//	@Param			challenge	body		types.CreateChallengeRequest	true	"Create Challenge Request"
+//	@Success		200			{object}	types.ChallengeResponse
+//	@Router			/challenge [post]
 func (s *APIServer) handleCreateChallenge(w http.ResponseWriter, r *http.Request) error {
 	createChallengeReq := &types.CreateChallengeRequest{}
 	if err := json.NewDecoder(r.Body).Decode(createChallengeReq); err != nil {
