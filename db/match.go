@@ -130,7 +130,8 @@ func (m *MariaDB) createMatchStatusTable() error {
 		name VARCHAR(50) NOT NULL,
 
 		PRIMARY KEY (id),
-		UNIQUE INDEX (id)
+		UNIQUE INDEX (id),
+		UNIQUE INDEX (name)
 	);`
 	_, err := m.db.Exec(query)
 	if err != nil {
@@ -152,7 +153,8 @@ func (m *MariaDB) createLanguageTable() error {
 		name VARCHAR(50) NOT NULL,
 
 		PRIMARY KEY (id),
-		UNIQUE INDEX (id)
+		UNIQUE INDEX (id),
+		UNIQUE INDEX (name)
 	);`
 	_, err := m.db.Exec(query)
 	if err != nil {
