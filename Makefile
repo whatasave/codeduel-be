@@ -10,7 +10,8 @@ run: build
 	./bin/$(BINARY_NAME)
 
 dev:
-	swag init
+	swag fmt -g api/api.go
+	swag init -g api/api.go
 	go run .
 
 test:
@@ -40,4 +41,5 @@ release:
 
 clean:
 	go clean
+	go mod tidy
 	rm -f bin/$(BINARY_NAME)

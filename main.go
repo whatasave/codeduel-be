@@ -10,7 +10,6 @@ import (
 	"github.com/xedom/codeduel/utils"
 )
 
-
 func main() {
   // loading env only if not in production
   if utils.GetEnv("ENV", "development") == "development" {
