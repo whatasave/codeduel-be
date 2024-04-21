@@ -279,6 +279,30 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1": {
+            "get": {
+                "description": "Root endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "root"
+                ],
+                "summary": "Root",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/v1/health": {
             "get": {
                 "description": "Health check endpoint",
@@ -289,7 +313,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "health"
+                    "root"
                 ],
                 "summary": "Health check",
                 "responses": {

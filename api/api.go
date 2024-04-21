@@ -38,7 +38,7 @@ type apiFunc func(w http.ResponseWriter, r *http.Request) error
 func NewAPIServer(config *config.Config, db db.DB) *APIServer {
 	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	log.Printf("%s Starting API server on http://%s", utils.GetLogTag("main"), address)
-	log.Printf("%s Docs http://localhost:5000/docs/index.html", utils.GetLogTag("main"))
+	log.Printf("%s Docs http://%s/docs/index.html", utils.GetLogTag("main"), address)
 	return &APIServer{
 		config:     config,
 		db:         db,
@@ -114,6 +114,13 @@ func (s *APIServer) Run() {
 	}
 }
 
+//	@Summary		Root
+//	@Description	Root endpoint
+//	@Tags			root
+//	@Accept			json
+//	@Produce		json
+//	@Success		200	{object}	map[string]any
+//	@Router			/v1 [get]
 func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) error {
 	host := fmt.Sprintf("http://%s", r.Host)
 	swaggerUrl := fmt.Sprintf("%s/docs/index.html", host)
@@ -128,7 +135,7 @@ func (s *APIServer) handleRoot(w http.ResponseWriter, r *http.Request) error {
 
 //	@Summary		Health check
 //	@Description	Health check endpoint
-//	@Tags			health
+//	@Tags			root
 //	@Accept			json
 //	@Produce		json
 //	@Success		200	{object}	map[string]string

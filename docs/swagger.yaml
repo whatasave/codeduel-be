@@ -311,6 +311,22 @@ paths:
       summary: Get user by username
       tags:
       - user
+  /v1:
+    get:
+      consumes:
+      - application/json
+      description: Root endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Root
+      tags:
+      - root
   /v1/health:
     get:
       consumes:
@@ -327,7 +343,7 @@ paths:
             type: object
       summary: Health check
       tags:
-      - health
+      - root
   /validateToken:
     post:
       consumes:
