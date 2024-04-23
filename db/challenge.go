@@ -25,12 +25,11 @@ func (m *MariaDB) createChallengeTable() error {
 }
 
 func (m *MariaDB) GetChallenges() (*[]types.Challenge, error) {
-	query := `SELECT * FROM ` + "`challenge`"
+	query := "SELECT * FROM `challenge`"
 	rows, err := m.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	challenges := &[]types.Challenge{}
 	for rows.Next() {
@@ -45,17 +44,16 @@ func (m *MariaDB) GetChallenges() (*[]types.Challenge, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	
-	return challenges, nil
+
+	return challenges, rows.Close()
 }
 
 func (m *MariaDB) GetChallengeByID(id int) (*types.Challenge, error) {
-	query := `SELECT * FROM ` + "`challenge`" + ` WHERE id = ?;`
+	query := "SELECT * FROM `challenge` WHERE id = ?;"
 	rows, err := m.db.Query(query, id)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		return m.parseChallenge(rows)
@@ -64,11 +62,11 @@ func (m *MariaDB) GetChallengeByID(id int) (*types.Challenge, error) {
 		return nil, err
 	}
 
-	return nil, nil
+	return nil, rows.Close()
 }
 
 func (m *MariaDB) CreateChallenge(challenge *types.Challenge) error {
-	query := `INSERT INTO ` + "`challenge`" + ` (owner_id, title, description, content) VALUES (?, ?, ?, ?);`
+	query := "INSERT INTO `challenge` (owner_id, title, description, content) VALUES (?, ?, ?, ?);"
 	res, err := m.db.Exec(query, challenge.OwnerID, challenge.Title, challenge.Description, challenge.Content)
 	if err != nil {
 		return err
@@ -82,13 +80,13 @@ func (m *MariaDB) CreateChallenge(challenge *types.Challenge) error {
 }
 
 func (m *MariaDB) UpdateChallenge(challenge *types.Challenge) error {
-	query := `UPDATE ` + "`challenge`" + ` SET title = ?, description = ?, content = ? WHERE id = ?;`
+	query := "UPDATE `challenge` SET title = ?, description = ?, content = ? WHERE id = ?;"
 	_, err := m.db.Exec(query, challenge.Title, challenge.Description, challenge.Content, challenge.ID)
 	return err
 }
 
 func (m *MariaDB) DeleteChallenge(id int) error {
-	query := `DELETE FROM ` + "`challenge`" + ` WHERE id = ?;`
+	query := "DELETE FROM `challenge` WHERE id = ?;"
 	_, err := m.db.Exec(query, id)
 	return err
 }
@@ -103,12 +101,11 @@ func (m *MariaDB) parseChallenge(rows *sql.Rows) (*types.Challenge, error) {
 }
 
 func (m *MariaDB) GetChallengesByOwnerID(ownerID int) (*[]types.Challenge, error) {
-	query := `SELECT * FROM ` + "`challenge`" + ` WHERE owner_id = ?;`
+	query := "SELECT * FROM `challenge` WHERE owner_id = ?;"
 	rows, err := m.db.Query(query, ownerID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	challenges := &[]types.Challenge{}
 	for rows.Next() {
@@ -123,6 +120,6 @@ func (m *MariaDB) GetChallengesByOwnerID(ownerID int) (*[]types.Challenge, error
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	
-	return challenges, nil
+
+	return challenges, rows.Close()
 }

@@ -54,7 +54,10 @@ func NewDB(host, port, user, pass, name string) (*MariaDB, error) {
 	}
 
 	var version string
-	pool.QueryRow("SELECT VERSION()").Scan(&version)
+	err = pool.QueryRow("SELECT VERSION()").Scan(&version)
+	if err != nil {
+		return nil, err
+	}
 	log.Printf("%s Connected to: %s", utils.GetLogTag("db"), version)
 
 	return &MariaDB{
@@ -75,7 +78,6 @@ func InitOLD() {
 	if err != nil {
 		log.Fatal("[DB] Unable to connect to the database:", err)
 	}
-	defer pool.Close()
 
 	ctx, stop := context.WithCancel(context.Background())
 	defer stop()
@@ -94,6 +96,11 @@ func InitOLD() {
 	pool.QueryRow("SELECT VERSION()").Scan(&version)
 	fmt.Println("[DB] Connected to:", version)
 	// Query(ctx, *id)
+
+	err = pool.Close()
+	if err != nil {
+		log.Fatal("[DB] Unable to close the database connection:", err)
+	}
 }
 
 func Ping(ctx context.Context) {
@@ -106,7 +113,7 @@ func Ping(ctx context.Context) {
 }
 
 func (m *MariaDB) InitDatabase() error {
-	query := `CREATE DATABASE IF NOT EXISTS codeduel;`
+	query := "CREATE DATABASE IF NOT EXISTS `codeduel`;"
 	_, err := m.db.Exec(query)
 
 	return err

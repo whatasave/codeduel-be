@@ -30,7 +30,6 @@ func (m *MariaDB) getLastInsertID() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer row.Close()
 
 	var id int
 	for row.Next() {
@@ -42,13 +41,11 @@ func (m *MariaDB) getLastInsertID() (int, error) {
 		return 0, err
 	}
 
-	return id, nil
+	return id, row.Close()
 }
 
 func (m *MariaDB) CreateAuth(auth *types.AuthEntry) error {
-	query := `INSERT INTO auth (user_id, provider, provider_id)
-		VALUES (?, ?, ?);
-	;`
+	query := `INSERT INTO auth (user_id, provider, provider_id) VALUES (?, ?, ?);`
 	_, err := m.db.Exec(query, auth.UserID, auth.Provider, auth.ProviderID)
 	if err != nil {
 		return err
@@ -69,7 +66,11 @@ func (m *MariaDB) GetAuthByProviderAndID(provider, providerID string) (*types.Au
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		if err := rows.Close(); err != nil {
+			fmt.Println("DB(GetAuthByProviderAndID):", err)
+		}
+	}(rows)
 
 	for rows.Next() {
 		return m.parseAuth(rows)
@@ -128,7 +129,6 @@ func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	var users []*types.UserResponse
 	for rows.Next() {
@@ -142,7 +142,7 @@ func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
 		return nil, err
 	}
 
-	return users, nil
+	return users, rows.Close()
 }
 
 func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
@@ -151,7 +151,11 @@ func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("DB(GetUserByID): %s", err.Error())
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		if err := rows.Close(); err != nil {
+			fmt.Println("DB(GetUserByID):", err)
+		}
+	}(rows)
 
 	for rows.Next() {
 		return m.parseUser(rows)
@@ -169,7 +173,11 @@ func (m *MariaDB) GetUserByUsername(username string) (*types.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("DB(GetUserByUsername): %s", err.Error())
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) {
+		if err := rows.Close(); err != nil {
+			fmt.Println("DB(GetUserByUsername):", err)
+		}
+	}(rows)
 
 	for rows.Next() {
 		return m.parseUser(rows)
@@ -191,12 +199,11 @@ func (m *MariaDB) GetUserStats(id int) ([]*types.UserStatsParsed, error) {
 		user_stats.updated_at
 	FROM user_stats
 	JOIN stats ON user_stats.stats_id = stats.id
-	WHERE user_id = ?;`;
+	WHERE user_id = ?;`
 	rows, err := m.db.Query(query, id)
 	if err != nil {
 		return nil, fmt.Errorf("DB(GetUserStats:0): %s", err.Error())
 	}
-	defer rows.Close()
 
 	var stats []*types.UserStatsParsed
 
@@ -217,7 +224,7 @@ func (m *MariaDB) GetUserStats(id int) ([]*types.UserStatsParsed, error) {
 		return nil, fmt.Errorf("DB(GetUserStats:2): %s", err.Error())
 	}
 
-	return stats, nil
+	return stats, rows.Close()
 }
 
 func (m *MariaDB) InitUserTables() error {

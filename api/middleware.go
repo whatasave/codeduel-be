@@ -60,6 +60,7 @@ func CorsMiddleware(next http.Handler) http.Handler {
 }
 
 type contextKey string
+
 const AuthUser contextKey = "middleware.auth.user"
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -71,7 +72,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			cookie, err := r.Cookie("jwt")
 			if err != nil {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				WriteJSON(w, http.StatusUnauthorized, Error{Err: err.Error()})
+				_ = WriteJSON(w, http.StatusUnauthorized, Error{Err: err.Error()})
 				return
 			}
 			tokenString = cookie.Value
@@ -79,7 +80,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		userHeader, err := utils.ValidateUserJWT(tokenString)
 		if err != nil {
-			WriteJSON(w, http.StatusUnauthorized, Error{Err: err.Error()})
+			_ = WriteJSON(w, http.StatusUnauthorized, Error{Err: err.Error()})
 			return
 		}
 

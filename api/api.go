@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -21,9 +22,9 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 }
 
 type Server struct {
-	config     *config.Config
+	config  *config.Config
 	address string
-	db         db.DB
+	db      db.DB
 }
 
 type Error struct {
@@ -37,8 +38,8 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 	log.Printf("%s Starting API server on http://%s", utils.GetLogTag("main"), address)
 	log.Printf("%s Docs http://%s/docs/index.html", utils.GetLogTag("main"), address)
 	return &Server{
-		config:     config,
-		db:         db,
+		config:  config,
+		db:      db,
 		address: address,
 	}
 }
@@ -88,7 +89,7 @@ func (s *Server) Run() error {
 
 	err := server.ListenAndServe()
 
-	if err != nil && err != http.ErrServerClosed {
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		return fmt.Errorf("failed to listen on %s: %w", s.address, err)
 	}
 
@@ -130,7 +131,10 @@ func makeHTTPHandleFunc(fn Handler) http.HandlerFunc {
 		if err := fn(w, r); err != nil {
 			// http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Printf("%s %s", utils.GetLogTag("error"), err.Error())
-			WriteJSON(w, http.StatusInternalServerError, Error{Err: err.Error()})
+			err := WriteJSON(w, http.StatusInternalServerError, Error{Err: err.Error()})
+			if err != nil {
+				log.Printf("%s %s", utils.GetLogTag("error"), err.Error())
+			}
 		}
 	}
 }

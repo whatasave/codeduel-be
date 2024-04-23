@@ -58,13 +58,13 @@ func (m *MariaDB) createMatchUserLinkTable() error {
 		match_status_id INT NOT NULL,
 		code TEXT NOT NULL,
 		language_id INT NOT NULL,
-		` + "`rank`" + ` INT NOT NULL,
+		`+"`rank`"+` INT NOT NULL,
 		duration INT NOT NULL,
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		
 		PRIMARY KEY (id),
-		FOREIGN KEY (match_id) REFERENCES ` + "`match`" + `(id),
+		FOREIGN KEY (match_id) REFERENCES `+"`match`"+`(id),
 		FOREIGN KEY (user_id) REFERENCES user(id),
 		FOREIGN KEY (status_id) REFERENCES status(id),
 		UNIQUE INDEX (id)

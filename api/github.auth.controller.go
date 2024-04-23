@@ -15,11 +15,11 @@ func (s *Server) GetGithubAuthRouter() http.Handler {
 	return router
 }
 
-//	@Summary		Login with Github
-//	@Description	Endpoint to login with Github OAuth, it will redirect to Github OAuth page to authenticate
-//	@Tags			auth
-//	@Success		302
-//	@Router			/github/auth [get]
+// @Summary		Login with GitHub
+// @Description	Endpoint to log in with GitHub OAuth, it will redirect to GitHub OAuth page to authenticate
+// @Tags		auth
+// @Success		302
+// @Router		/github/auth [get]
 func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 
@@ -39,12 +39,12 @@ func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-//	@Summary		Github Auth Callback
-//	@Description	Endpoint to handle Github OAuth callback, it will exchange code for access token and get user data from Github, then it will register a new user or login the user if it already exists. It will set a cookie with JWT token and redirect to frontend with the JWT token as a query parameter.
-//	@Tags			auth
-//	@Success		302
-//	@Failure		500	{object}	ApiError
-//	@Router			/github/auth/callback [get]
+// @Summary		GitHub Auth Callback
+// @Description	Endpoint to handle GitHub OAuth callback, it will exchange code for access token and get user data from GitHub, then it will register a new user or login the user if it already exists. It will set a cookie with JWT token and redirect to frontend with the JWT token as a query parameter.
+// @Tags		auth
+// @Success		302
+// @Failure		500	{object}	ApiError
+// @Router		/github/auth/callback [get]
 func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 	if !urlParams.Has("code") || !urlParams.Has("state") {
@@ -113,7 +113,7 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 		Expires: utils.UnixTimeToTime(token.ExpiresAt),
 		// MaxAge: 86400,
 		HttpOnly: s.config.CookieHTTPOnly, //true,
-		Secure:   s.config.CookieSecure, //false,
+		Secure:   s.config.CookieSecure,   //false,
 		// SameSite: http.SameSiteStrictMode,
 		// SameSite: http.SameSiteNoneMode,
 		SameSite: http.SameSiteLaxMode,

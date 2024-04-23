@@ -9,25 +9,25 @@ import (
 )
 
 func GetGithubAccessToken(clientID, clientSecret, code, state string) (*types.GithubAccessTokenResponse, error) {
-    githubUserAccessToken := &types.GithubAccessTokenResponse{}
-	
+	githubUserAccessToken := &types.GithubAccessTokenResponse{}
+
 	body := map[string]string{
-        "client_id":     clientID,
-        "client_secret": clientSecret,
-        "code":          code,
-        "state":         state,
-    }
-    
+		"client_id":     clientID,
+		"client_secret": clientSecret,
+		"code":          code,
+		"state":         state,
+	}
+
 	err := utils.HttpPost("https://github.com/login/oauth/access_token", map[string]string{
-		"Accept": "application/json",
+		"Accept":       "application/json",
 		"Content-Type": "application/json",
 	}, body, githubUserAccessToken)
 
-    return githubUserAccessToken, err
+	return githubUserAccessToken, err
 }
 
 func GetGithubUserData(accessToken string) (*types.GithubUser, error) {
-    githubUserData := &types.GithubUser{}
+	githubUserData := &types.GithubUser{}
 
 	err := utils.HttpGet("https://api.github.com/user", map[string]string{
 		"Authorization": fmt.Sprintf("Bearer %s", accessToken),
@@ -51,7 +51,7 @@ func RegisterGithubUser(db db.DB, githubUser *types.GithubUser) (*types.User, er
 	user := &types.User{
 		Username: githubUser.Login,
 		Email:    githubUser.Email,
-		Avatar: githubUser.AvatarUrl,
+		Avatar:   githubUser.AvatarUrl,
 	}
 	err := db.CreateUser(user)
 	if err != nil {
