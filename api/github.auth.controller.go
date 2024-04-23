@@ -8,12 +8,19 @@ import (
 	"github.com/xedom/codeduel/utils"
 )
 
+func (s *Server) GetGithubAuthRouter() http.Handler {
+	router := http.NewServeMux()
+	router.HandleFunc("/", makeHTTPHandleFunc(s.handleGithubAuth))
+	router.HandleFunc("/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback))
+	return router
+}
+
 //	@Summary		Login with Github
 //	@Description	Endpoint to login with Github OAuth, it will redirect to Github OAuth page to authenticate
 //	@Tags			auth
 //	@Success		302
 //	@Router			/github/auth [get]
-func (s *APIServer) handleGithubAuth(w http.ResponseWriter, r *http.Request) error {
+func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 
 	redirect := "https://github.com/login/oauth/authorize"
@@ -38,7 +45,7 @@ func (s *APIServer) handleGithubAuth(w http.ResponseWriter, r *http.Request) err
 //	@Success		302
 //	@Failure		500	{object}	ApiError
 //	@Router			/github/auth/callback [get]
-func (s *APIServer) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request) error {
+func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 	if !urlParams.Has("code") || !urlParams.Has("state") {
 		return fmt.Errorf("code or state is empty")

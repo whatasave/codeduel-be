@@ -7,11 +7,20 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/xedom/codeduel/db"
 	"github.com/xedom/codeduel/types"
 	"github.com/xedom/codeduel/utils"
 )
+
+func (s *Server) GetUserRouter() http.Handler {
+	router := http.NewServeMux()
+	router.HandleFunc("GET /", makeHTTPHandleFunc(s.handleGetUsers))
+	router.HandleFunc("POST /", makeHTTPHandleFunc(s.handleCreateUser))
+	router.HandleFunc("GET /{username}", makeHTTPHandleFunc(s.handleGetUserByUsername))
+	router.HandleFunc("DELETE /{username}", makeHTTPHandleFunc(s.handleDeleteUserByUsername))
+	router.HandleFunc("GET /profile", makeHTTPHandleFunc(s.handleProfile))
+	return router
+}
 
 //	@Summary		Get all users
 //	@Description	Get all users from the database
@@ -20,7 +29,7 @@ import (
 //	@Success		200	{object}	[]types.UserResponse
 //	@Failure		500	{object}	ApiError
 //	@Router			/user [get]
-func (s *APIServer) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
+func (s *Server) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
 	users, err := s.db.GetUsers()
 	if err != nil {
 		return err
@@ -38,7 +47,7 @@ func (s *APIServer) handleGetUsers(w http.ResponseWriter, _ *http.Request) error
 //	@Success		200		{object}	types.User
 //	@Failure		500		{object}	ApiError
 //	@Router			/user [post]
-func (s *APIServer) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
+func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
 	createUserReq := &types.CreateUserRequest{}
 	if err := json.NewDecoder(r.Body).Decode(createUserReq); err != nil {
 		return err
@@ -64,9 +73,8 @@ func (s *APIServer) handleCreateUser(w http.ResponseWriter, r *http.Request) err
 //	@Success		200			{object}	types.User
 //	@Failure		500			{object}	ApiError
 //	@Router			/user/{username} [get]
-func (s *APIServer) handleGetUserByUsername(w http.ResponseWriter, r *http.Request) error {
-	params := mux.Vars(r)
-	username := params["username"]
+func (s *Server) handleGetUserByUsername(w http.ResponseWriter, r *http.Request) error {
+	username := r.PathValue("username")
 	log.Print("[API] Fetching user ", username)
 	user, err := s.db.GetUserByUsername(username)
 	if err != nil {
@@ -85,9 +93,8 @@ func (s *APIServer) handleGetUserByUsername(w http.ResponseWriter, r *http.Reque
 //	@Success		200
 //	@Failure		500	{object}	ApiError
 //	@Router			/user/{username} [delete]
-func (s *APIServer) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Request) error {
-	params := mux.Vars(r)
-	username := params["username"]
+func (s *Server) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Request) error {
+	username := r.PathValue("username")
 	log.Print("[API] Deleting user ", username)
 	return s.db.DeleteUserByUsername(username)
 }
@@ -100,8 +107,8 @@ func (s *APIServer) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Re
 //	@Failure		500	{object}	ApiError
 //	@Security		CookieAuth
 //	@Router			/profile [get]
-func (s *APIServer) handleProfile(w http.ResponseWriter, r *http.Request) error {
-	user, err := GetAuthUser(r, s.db)
+func (s *Server) handleProfile(w http.ResponseWriter, r *http.Request) error {
+	user, err := GetUserFromDB(r, s.db)
 	if err != nil {
 		return err
 	}
@@ -118,7 +125,7 @@ func (s *APIServer) handleProfile(w http.ResponseWriter, r *http.Request) error 
 //	@Success		200		{object}	types.User
 //	@Failure		500		{object}	ApiError
 //	@Router			/validateToken [post]
-func (s *APIServer) handleValidateToken(w http.ResponseWriter, r *http.Request) error {
+func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) error {
 	verifyTokenBody := &types.VerifyToken{}
 	if err := json.NewDecoder(r.Body).Decode(verifyTokenBody); err != nil {
 		return err
@@ -137,7 +144,7 @@ func (s *APIServer) handleValidateToken(w http.ResponseWriter, r *http.Request) 
 	return WriteJSON(w, http.StatusOK, decodedUserData)
 }
 
-func GetAuthUser(r *http.Request, db db.DB) (*types.ProfileResponse, error) {
+func GetUserFromDB(r *http.Request, db db.DB) (*types.ProfileResponse, error) {
 	headerUserID := r.Header.Get("x-user-id")
 	userID, err := strconv.Atoi(headerUserID)
 	if err != nil {

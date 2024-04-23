@@ -6,9 +6,18 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/xedom/codeduel/types"
 )
+
+func (s *Server) GetChallengeRouter() http.Handler {
+	router := http.NewServeMux()
+	router.HandleFunc("GET /", makeHTTPHandleFunc(s.handleGetChallenges))
+	router.HandleFunc("POST /", makeHTTPHandleFunc(s.handleCreateChallenge))
+	router.HandleFunc("GET /{id}", makeHTTPHandleFunc(s.handleGetChallengeByID))
+	router.HandleFunc("PUT /{id}", makeHTTPHandleFunc(s.handleUpdateChallenge))
+	router.HandleFunc("DELETE /{id}", makeHTTPHandleFunc(s.handleDeleteChallenge))
+	return router
+}
 
 //	@Summary		Get all challenges
 //	@Description	Get all challenges
@@ -17,7 +26,7 @@ import (
 //	@Produce		json
 //	@Success		200	{object}	types.ChallengeListResponse
 //	@Router			/challenge [get]
-func (s *APIServer) handleGetChallenges(w http.ResponseWriter, _ *http.Request) error {
+func (s *Server) handleGetChallenges(w http.ResponseWriter, _ *http.Request) error {
 	challenges, err := s.db.GetChallenges()
 	if err != nil {
 		return err
@@ -34,13 +43,13 @@ func (s *APIServer) handleGetChallenges(w http.ResponseWriter, _ *http.Request) 
 //	@Param			challenge	body		types.CreateChallengeRequest	true	"Create Challenge Request"
 //	@Success		200			{object}	types.ChallengeResponse
 //	@Router			/challenge [post]
-func (s *APIServer) handleCreateChallenge(w http.ResponseWriter, r *http.Request) error {
+func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) error {
 	createChallengeReq := &types.CreateChallengeRequest{}
 	if err := json.NewDecoder(r.Body).Decode(createChallengeReq); err != nil {
 		return err
 	}
 	
-	user, err := GetAuthUser(r, s.db)
+	user, err := GetUserFromDB(r, s.db)
 	if err != nil {
 		return err
 	}
@@ -61,9 +70,8 @@ func (s *APIServer) handleCreateChallenge(w http.ResponseWriter, r *http.Request
 	return WriteJSON(w, http.StatusOK, challenge)
 }
 
-func (s *APIServer) handleGetChallengeByID(w http.ResponseWriter, r *http.Request) error {
-	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
+func (s *Server) handleGetChallengeByID(w http.ResponseWriter, r *http.Request) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return err
 	}
@@ -77,9 +85,8 @@ func (s *APIServer) handleGetChallengeByID(w http.ResponseWriter, r *http.Reques
 	return WriteJSON(w, http.StatusOK, challenge)
 }
 
-func (s *APIServer) handleUpdateChallenge(w http.ResponseWriter, r *http.Request) error {
-	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
+func (s *Server) handleUpdateChallenge(w http.ResponseWriter, r *http.Request) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return err
 	}
@@ -100,9 +107,8 @@ func (s *APIServer) handleUpdateChallenge(w http.ResponseWriter, r *http.Request
 	return s.db.UpdateChallenge(challenge)
 }
 
-func (s *APIServer) handleDeleteChallenge(w http.ResponseWriter, r *http.Request) error {
-	params := mux.Vars(r)
-	id, err := strconv.Atoi(params["id"])
+func (s *Server) handleDeleteChallenge(w http.ResponseWriter, r *http.Request) error {
+	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return err
 	}
