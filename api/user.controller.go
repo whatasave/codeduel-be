@@ -27,7 +27,7 @@ func (s *Server) GetUserRouter() http.Handler {
 //	@Tags			user
 //	@Produce		json
 //	@Success		200	{object}	[]types.UserResponse
-//	@Failure		500	{object}	ApiError
+//	@Failure		500	{object}	Error
 //	@Router			/user [get]
 func (s *Server) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
 	users, err := s.db.GetUsers()
@@ -45,7 +45,7 @@ func (s *Server) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
 //	@Produce		json
 //	@Param			user	body		types.CreateUserRequest	true	"Create User Request"
 //	@Success		200		{object}	types.User
-//	@Failure		500		{object}	ApiError
+//	@Failure		500		{object}	Error
 //	@Router			/user [post]
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
 	createUserReq := &types.CreateUserRequest{}
@@ -71,7 +71,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) error 
 //	@Produce		json
 //	@Param			username	path		string	true	"Username"
 //	@Success		200			{object}	types.User
-//	@Failure		500			{object}	ApiError
+//	@Failure		500			{object}	Error
 //	@Router			/user/{username} [get]
 func (s *Server) handleGetUserByUsername(w http.ResponseWriter, r *http.Request) error {
 	username := r.PathValue("username")
@@ -91,7 +91,7 @@ func (s *Server) handleGetUserByUsername(w http.ResponseWriter, r *http.Request)
 //	@Produce		json
 //	@Param			username	path	string	true	"Username"
 //	@Success		200
-//	@Failure		500	{object}	ApiError
+//	@Failure		500	{object}	Error
 //	@Router			/user/{username} [delete]
 func (s *Server) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Request) error {
 	username := r.PathValue("username")
@@ -104,7 +104,7 @@ func (s *Server) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Reque
 //	@Tags			user
 //	@Produce		json
 //	@Success		200	{object}	types.ProfileResponse
-//	@Failure		500	{object}	ApiError
+//	@Failure		500	{object}	Error
 //	@Security		CookieAuth
 //	@Router			/profile [get]
 func (s *Server) handleProfile(w http.ResponseWriter, r *http.Request) error {
@@ -123,7 +123,7 @@ func (s *Server) handleProfile(w http.ResponseWriter, r *http.Request) error {
 //	@Produce		json
 //	@Param			token	body		types.VerifyToken	true	"Service token"
 //	@Success		200		{object}	types.User
-//	@Failure		500		{object}	ApiError
+//	@Failure		500		{object}	Error
 //	@Router			/validateToken [post]
 func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) error {
 	verifyTokenBody := &types.VerifyToken{}

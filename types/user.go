@@ -10,46 +10,46 @@ type VerifyToken struct {
 }
 
 type UserRequestHeader struct {
-	ID        int    `json:"id"`
-	Username  string `json:"username"`
-	Email     string `json:"email"`
-	Avatar    string `json:"avatar"`
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Avatar   string `json:"avatar"`
 	// Role   string `json:"role"`
 	ExpiresAt int64 `json:"expires_at"`
 }
 
 type User struct {
-	ID              int    `json:"id"`
-	Name            string `json:"name"`
-	Username        string `json:"username"`
-	Email           string `json:"email"`
-	Avatar          string `json:"avatar"`
-	BackgroundImg   string `json:"background_img"`
-	Bio             string `json:"bio"`
-	CreatedAt       string `json:"created_at"`
-	UpdatedAt       string `json:"updated_at"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Username      string `json:"username"`
+	Email         string `json:"email"`
+	Avatar        string `json:"avatar"`
+	BackgroundImg string `json:"background_img"`
+	Bio           string `json:"bio"`
+	CreatedAt     string `json:"created_at"`
+	UpdatedAt     string `json:"updated_at"`
 }
 
 type UserStats struct {
-	ID	            int    `json:"id"`
-	UserID          int    `json:"user_id"`
-	StatsID         int    `json:"stats_id"`
-	Stat            string `json:"stat"`
-	CreatedAt       string `json:"created_at"`
-	UpdatedAt       string `json:"updated_at"`
+	ID        int    `json:"id"`
+	UserID    int    `json:"user_id"`
+	StatsID   int    `json:"stats_id"`
+	Stat      string `json:"stat"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type UserStatsParsed struct {
-	ID	            int    `json:"id"`
-	Name            string `json:"name"`
-	Stat            string `json:"stat"`
-	CreatedAt       string `json:"created_at"`
-	UpdatedAt       string `json:"updated_at"`
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Stat      string `json:"stat"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type Stats struct {
-	ID 			int    `json:"id"`
-	Name        string `json:"name"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 type ProfileResponse struct {
@@ -58,10 +58,10 @@ type ProfileResponse struct {
 }
 
 type UserResponse struct {
-	Name            string `json:"name"`
-	Username        string `json:"username"`
-	Avatar          string `json:"avatar"`
-	BackgroundImg   string `json:"background_img"`
-	Bio             string `json:"bio"`
-	CreatedAt       string `json:"created_at"`
+	Name          string `json:"name"`
+	Username      string `json:"username"`
+	Avatar        string `json:"avatar"`
+	BackgroundImg string `json:"background_img"`
+	Bio           string `json:"bio"`
+	CreatedAt     string `json:"created_at"`
 }

@@ -1,6 +1,6 @@
-basePath: /v1
+basePath: /
 definitions:
-  api.ApiError:
+  api.Error:
     properties:
       error:
         type: string
@@ -127,7 +127,7 @@ definitions:
 externalDocs:
   description: OpenAPI
   url: https://swagger.io/resources/open-api/
-host: 127.0.0.1:5000
+host: localhost:5000
 info:
   contact:
     email: support@codeduel
@@ -179,18 +179,18 @@ paths:
       - challenge
   /github/auth:
     get:
-      description: Endpoint to login with Github OAuth, it will redirect to Github
+      description: Endpoint to log in with GitHub OAuth, it will redirect to GitHub
         OAuth page to authenticate
       responses:
         "302":
           description: Found
-      summary: Login with Github
+      summary: Login with GitHub
       tags:
       - auth
   /github/auth/callback:
     get:
-      description: Endpoint to handle Github OAuth callback, it will exchange code
-        for access token and get user data from Github, then it will register a new
+      description: Endpoint to handle GitHub OAuth callback, it will exchange code
+        for access token and get user data from GitHub, then it will register a new
         user or login the user if it already exists. It will set a cookie with JWT
         token and redirect to frontend with the JWT token as a query parameter.
       responses:
@@ -199,10 +199,27 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ApiError'
-      summary: Github Auth Callback
+            $ref: '#/definitions/api.Error'
+      summary: GitHub Auth Callback
       tags:
       - auth
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Health check endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - root
   /profile:
     get:
       description: Get user profile when authenticated with JWT in the cookie
@@ -216,7 +233,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ApiError'
+            $ref: '#/definitions/api.Error'
       security:
       - CookieAuth: []
       summary: Get Profile
@@ -237,7 +254,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ApiError'
+            $ref: '#/definitions/api.Error'
       summary: Get all users
       tags:
       - user
@@ -262,7 +279,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ApiError'
+            $ref: '#/definitions/api.Error'
       summary: Create a new user
       tags:
       - user
@@ -285,7 +302,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ApiError'
+            $ref: '#/definitions/api.Error'
       summary: Delete user by username
       tags:
       - user
@@ -307,7 +324,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ApiError'
+            $ref: '#/definitions/api.Error'
       summary: Get user by username
       tags:
       - user
@@ -325,23 +342,6 @@ paths:
             additionalProperties: true
             type: object
       summary: Root
-      tags:
-      - root
-  /v1/health:
-    get:
-      consumes:
-      - application/json
-      description: Health check endpoint
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Health check
       tags:
       - root
   /validateToken:
@@ -367,7 +367,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/api.ApiError'
+            $ref: '#/definitions/api.Error'
       summary: Validate JWT Token
       tags:
       - user

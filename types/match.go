@@ -32,13 +32,13 @@ type Mode struct {
 	Description string `json:"description"`
 }
 
-// 0: not ready, 1: ready, 2: in match, 3: finished
+// Status 0: not ready, 1: ready, 2: in match, 3: finished
 type Status struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
 }
 
-// 0: starting, 1: ongoing, 2: finished
+// MatchStatus 0: starting, 1: ongoing, 2: finished
 type MatchStatus struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`

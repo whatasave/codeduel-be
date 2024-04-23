@@ -81,11 +81,11 @@ const docTemplate = `{
         },
         "/github/auth": {
             "get": {
-                "description": "Endpoint to login with Github OAuth, it will redirect to Github OAuth page to authenticate",
+                "description": "Endpoint to log in with GitHub OAuth, it will redirect to GitHub OAuth page to authenticate",
                 "tags": [
                     "auth"
                 ],
-                "summary": "Login with Github",
+                "summary": "Login with GitHub",
                 "responses": {
                     "302": {
                         "description": "Found"
@@ -95,11 +95,11 @@ const docTemplate = `{
         },
         "/github/auth/callback": {
             "get": {
-                "description": "Endpoint to handle Github OAuth callback, it will exchange code for access token and get user data from Github, then it will register a new user or login the user if it already exists. It will set a cookie with JWT token and redirect to frontend with the JWT token as a query parameter.",
+                "description": "Endpoint to handle GitHub OAuth callback, it will exchange code for access token and get user data from GitHub, then it will register a new user or login the user if it already exists. It will set a cookie with JWT token and redirect to frontend with the JWT token as a query parameter.",
                 "tags": [
                     "auth"
                 ],
-                "summary": "Github Auth Callback",
+                "summary": "GitHub Auth Callback",
                 "responses": {
                     "302": {
                         "description": "Found"
@@ -107,7 +107,33 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.ApiError"
+                            "$ref": "#/definitions/api.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Health check endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "root"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -138,7 +164,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.ApiError"
+                            "$ref": "#/definitions/api.Error"
                         }
                     }
                 }
@@ -167,7 +193,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.ApiError"
+                            "$ref": "#/definitions/api.Error"
                         }
                     }
                 }
@@ -205,7 +231,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.ApiError"
+                            "$ref": "#/definitions/api.Error"
                         }
                     }
                 }
@@ -240,7 +266,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.ApiError"
+                            "$ref": "#/definitions/api.Error"
                         }
                     }
                 }
@@ -273,7 +299,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.ApiError"
+                            "$ref": "#/definitions/api.Error"
                         }
                     }
                 }
@@ -298,32 +324,6 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/health": {
-            "get": {
-                "description": "Health check endpoint",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "root"
-                ],
-                "summary": "Health check",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
                         }
                     }
                 }
@@ -363,7 +363,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/api.ApiError"
+                            "$ref": "#/definitions/api.Error"
                         }
                     }
                 }
@@ -371,7 +371,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.ApiError": {
+        "api.Error": {
             "type": "object",
             "properties": {
                 "error": {
@@ -583,8 +583,8 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "127.0.0.1:5000",
-	BasePath:         "/v1",
+	Host:             "localhost:5000",
+	BasePath:         "/",
 	Schemes:          []string{"http"},
 	Title:            "CodeDuel API",
 	Description:      "Backend API for CodeDuel",

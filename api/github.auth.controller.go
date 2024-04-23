@@ -15,11 +15,11 @@ func (s *Server) GetGithubAuthRouter() http.Handler {
 	return router
 }
 
-// @Summary		Login with GitHub
-// @Description	Endpoint to log in with GitHub OAuth, it will redirect to GitHub OAuth page to authenticate
-// @Tags		auth
-// @Success		302
-// @Router		/github/auth [get]
+//	@Summary		Login with GitHub
+//	@Description	Endpoint to log in with GitHub OAuth, it will redirect to GitHub OAuth page to authenticate
+//	@Tags			auth
+//	@Success		302
+//	@Router			/github/auth [get]
 func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 
@@ -39,12 +39,12 @@ func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error 
 	return nil
 }
 
-// @Summary		GitHub Auth Callback
-// @Description	Endpoint to handle GitHub OAuth callback, it will exchange code for access token and get user data from GitHub, then it will register a new user or login the user if it already exists. It will set a cookie with JWT token and redirect to frontend with the JWT token as a query parameter.
-// @Tags		auth
-// @Success		302
-// @Failure		500	{object}	ApiError
-// @Router		/github/auth/callback [get]
+//	@Summary		GitHub Auth Callback
+//	@Description	Endpoint to handle GitHub OAuth callback, it will exchange code for access token and get user data from GitHub, then it will register a new user or login the user if it already exists. It will set a cookie with JWT token and redirect to frontend with the JWT token as a query parameter.
+//	@Tags			auth
+//	@Success		302
+//	@Failure		500	{object} Error
+//	@Router			/github/auth/callback [get]
 func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 	if !urlParams.Has("code") || !urlParams.Has("state") {

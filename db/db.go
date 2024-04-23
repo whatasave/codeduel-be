@@ -54,15 +54,13 @@ func NewDB(host, port, user, pass, name string) (*MariaDB, error) {
 	}
 
 	var version string
-	err = pool.QueryRow("SELECT VERSION()").Scan(&version)
+	err = pool.QueryRow("SELECT VERSION();").Scan(&version)
 	if err != nil {
 		return nil, err
 	}
 	log.Printf("%s Connected to: %s", utils.GetLogTag("db"), version)
 
-	return &MariaDB{
-		db: pool,
-	}, nil
+	return &MariaDB{db: pool}, nil
 }
 
 var pool *sql.DB

@@ -48,27 +48,27 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 //	@version		1.0
 //	@description	Backend API for CodeDuel
 //	@termsOfService	http://swagger.io/terms/
-//
+
 //	@securityDefinitions.basic	BasicAuth
-//
+
 //	@securityDefinitions.apiKey	JWT
 //	@in							header
 //	@name						token
 //	@description				Authorization token
-//
+
 //	@contact.name	API Support
 //	@contact.url	http://www.swagger.io/support
 //	@contact.email	support@codeduel
-//
+
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
-//
+
 //	@externalDocs.description	OpenAPI
 //	@externalDocs.url			https://swagger.io/resources/open-api/
-//
-// @host		127.0.0.1:5000
+
+// @host		localhost:5000
 // @schemes	http
-// @basePath	/v1
+// @basePath	/
 func (s *Server) Run() error {
 	v1 := http.NewServeMux()
 	v1.Handle("/user/", http.StripPrefix("/user", s.GetUserRouter()))
@@ -115,14 +115,26 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) error {
 	})
 }
 
+type JSONResult struct {
+	Code    int         `json:"code" `
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+type Order struct { //in `proto` package
+	Id   uint        `json:"id"`
+	Data interface{} `json:"data"`
+}
+
 // @Summary		Health check
 // @Description	Health check endpoint
 // @Tags			root
 // @Accept			json
 // @Produce		json
 // @Success		200	{object}	map[string]string
-// @Router			/v1/health [get]
+// @Router			/health [get]
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) error {
+	// return WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	return WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 

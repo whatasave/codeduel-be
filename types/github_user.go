@@ -4,7 +4,7 @@ type AuthEntry struct {
 	ID         int    `json:"id"`
 	UserID     int    `json:"user_id"`
 	Provider   string `json:"provider"`
-	ProviderID string `jsong:"provider_id"`
+	ProviderID string `json:"provider_id"`
 	CreatedAt  string `json:"created_at"`
 	UpdatedAt  string `json:"updated_at"`
 }

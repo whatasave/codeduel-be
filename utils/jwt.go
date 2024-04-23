@@ -9,7 +9,7 @@ import (
 )
 
 const jwtSecret = "yoooSuperSecret" // TODO: move to env
-const expiresIn_minutes = 5
+const expiresInMinutes = 5
 
 func ValidateUserJWT(tokenString string) (*types.UserRequestHeader, error) {
 	token, err := ParseJWT(tokenString)
@@ -52,17 +52,17 @@ type JWT struct {
 
 func CreateJWT(user *types.User) (*JWT, error) {
 	// https://auth0.com/docs/secure/tokens/json-web-tokens/json-web-token-claims#registered-claims
-	expires_at := time.Now().Add(time.Minute * expiresIn_minutes).Unix()
+	expiresAt := time.Now().Add(time.Minute * expiresInMinutes).Unix()
 
 	claims := &jwt.MapClaims{
 		"iss": "codeduel",
 		"sub": user.ID,
-		"exp": expires_at,
+		"exp": expiresAt,
 
 		// custom claims
 		"username": user.Username,
 		"email":    user.Email,
-		"avatar": user.Avatar,
+		"avatar":   user.Avatar,
 		// "role": user.Role,
 	}
 
@@ -73,5 +73,5 @@ func CreateJWT(user *types.User) (*JWT, error) {
 		return nil, err
 	}
 
-	return &JWT{Jwt: tokenString, ExpiresAt: expires_at}, nil
+	return &JWT{Jwt: tokenString, ExpiresAt: expiresAt}, nil
 }
