@@ -9,16 +9,15 @@ import (
 
 	"github.com/xedom/codeduel/db"
 	"github.com/xedom/codeduel/types"
-	"github.com/xedom/codeduel/utils"
 )
 
 func (s *Server) GetUserRouter() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /", makeHTTPHandleFunc(s.handleGetUsers))
-	router.HandleFunc("POST /", makeHTTPHandleFunc(s.handleCreateUser))
-	router.HandleFunc("GET /{username}", makeHTTPHandleFunc(s.handleGetUserByUsername))
-	router.HandleFunc("DELETE /{username}", makeHTTPHandleFunc(s.handleDeleteUserByUsername))
-	router.HandleFunc("GET /profile", makeHTTPHandleFunc(s.handleProfile))
+	router.HandleFunc("GET /user/", makeHTTPHandleFunc(s.handleGetUsers))
+	router.HandleFunc("POST /user/", makeHTTPHandleFunc(s.handleCreateUser))
+	router.HandleFunc("GET /user/{username}", makeHTTPHandleFunc(s.handleGetUserByUsername))
+	router.HandleFunc("DELETE /user/{username}", makeHTTPHandleFunc(s.handleDeleteUserByUsername))
+	router.HandleFunc("GET /user/profile", makeHTTPHandleFunc(s.handleProfile))
 	return router
 }
 
@@ -28,14 +27,23 @@ func (s *Server) GetUserRouter() http.Handler {
 //	@Produce		json
 //	@Success		200	{object}	[]types.UserResponse
 //	@Failure		500	{object}	Error
-//	@Router			/user [get]
-func (s *Server) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
-	users, err := s.db.GetUsers()
-	if err != nil {
-		return err
-	}
+//	@Router			/v1/user [get]
+func (s *Server) handleGetUsers(w http.ResponseWriter, r *http.Request) error {
 
-	return WriteJSON(w, http.StatusOK, users)
+	fmt.Fprintf(w, "url.Path: %v\n", r)
+	fmt.Fprintf(w, "url.Path: %v\n", r.URL.Path)
+	fmt.Fprintf(w, "url.RawPath: %v\n", r.URL.RawPath)
+	fmt.Fprintf(w, "url.EscapedPath(): %v\n", r.URL.EscapedPath())
+
+	// return nil
+
+	// users, err := s.db.GetUsers()
+	// if err != nil {
+	// 	return err
+	// }
+
+	// return WriteJSON(w, http.StatusOK, users)
+	return WriteJSON(w, http.StatusOK, r.URL)
 }
 
 //	@Summary		Create a new user
@@ -46,7 +54,7 @@ func (s *Server) handleGetUsers(w http.ResponseWriter, _ *http.Request) error {
 //	@Param			user	body		types.CreateUserRequest	true	"Create User Request"
 //	@Success		200		{object}	types.User
 //	@Failure		500		{object}	Error
-//	@Router			/user [post]
+//	@Router			/v1/user [post]
 func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
 	createUserReq := &types.CreateUserRequest{}
 	if err := json.NewDecoder(r.Body).Decode(createUserReq); err != nil {
@@ -72,7 +80,7 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) error 
 //	@Param			username	path		string	true	"Username"
 //	@Success		200			{object}	types.User
 //	@Failure		500			{object}	Error
-//	@Router			/user/{username} [get]
+//	@Router			/v1/user/{username} [get]
 func (s *Server) handleGetUserByUsername(w http.ResponseWriter, r *http.Request) error {
 	username := r.PathValue("username")
 	log.Print("[API] Fetching user ", username)
@@ -92,7 +100,7 @@ func (s *Server) handleGetUserByUsername(w http.ResponseWriter, r *http.Request)
 //	@Param			username	path	string	true	"Username"
 //	@Success		200
 //	@Failure		500	{object}	Error
-//	@Router			/user/{username} [delete]
+//	@Router			/v1/user/{username} [delete]
 func (s *Server) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Request) error {
 	username := r.PathValue("username")
 	log.Print("[API] Deleting user ", username)
@@ -106,7 +114,7 @@ func (s *Server) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Reque
 //	@Success		200	{object}	types.ProfileResponse
 //	@Failure		500	{object}	Error
 //	@Security		CookieAuth
-//	@Router			/profile [get]
+//	@Router			/v1/user/profile [get]
 func (s *Server) handleProfile(w http.ResponseWriter, r *http.Request) error {
 	user, err := GetUserFromDB(r, s.db)
 	if err != nil {
@@ -114,34 +122,6 @@ func (s *Server) handleProfile(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return WriteJSON(w, http.StatusOK, user)
-}
-
-//	@Summary		Validate JWT Token
-//	@Description	Validate if the user JWT token is valid, and return user data. Used from other services to validate user token
-//	@Tags			user
-//	@Accept			json
-//	@Produce		json
-//	@Param			token	body		types.VerifyToken	true	"Service token"
-//	@Success		200		{object}	types.User
-//	@Failure		500		{object}	Error
-//	@Router			/validateToken [post]
-func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) error {
-	verifyTokenBody := &types.VerifyToken{}
-	if err := json.NewDecoder(r.Body).Decode(verifyTokenBody); err != nil {
-		return err
-	}
-
-	decodedUserData, err := utils.ValidateUserJWT(verifyTokenBody.JWTToken)
-	if err != nil {
-		return fmt.Errorf("invalid token")
-	}
-
-	// user, err := s.db.GetUserByID(userID)
-	// if err != nil {
-	// 	return err
-	// }
-
-	return WriteJSON(w, http.StatusOK, decodedUserData)
 }
 
 func GetUserFromDB(r *http.Request, db db.DB) (*types.ProfileResponse, error) {

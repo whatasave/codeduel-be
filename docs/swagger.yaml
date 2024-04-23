@@ -1,8 +1,26 @@
-basePath: /
 definitions:
   api.Error:
     properties:
       error:
+        type: string
+    type: object
+  types.Challenge:
+    properties:
+      content:
+        description: markdown maybe the link to the file
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      owner_id:
+        description: User.ID
+        type: integer
+      title:
+        type: string
+      updated_at:
         type: string
     type: object
   types.ChallengeListResponse:
@@ -68,6 +86,17 @@ definitions:
       updated_at:
         type: string
       username:
+        type: string
+    type: object
+  types.UpdateChallengeRequest:
+    properties:
+      content:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      title:
         type: string
     type: object
   types.User:
@@ -141,7 +170,40 @@ info:
   title: CodeDuel API
   version: "1.0"
 paths:
-  /challenge:
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Health check endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Health check
+      tags:
+      - root
+  /v1:
+    get:
+      consumes:
+      - application/json
+      description: Root endpoint
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Root
+      tags:
+      - root
+  /v1/challenge:
     get:
       consumes:
       - application/json
@@ -177,7 +239,70 @@ paths:
       summary: Create a new challenge
       tags:
       - challenge
-  /github/auth:
+  /v1/challenge/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete challenge by ID
+      parameters:
+      - description: Challenge ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete challenge by ID
+      tags:
+      - challenge
+    get:
+      consumes:
+      - application/json
+      description: Get challenge by ID
+      parameters:
+      - description: Challenge ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Challenge'
+      summary: Get challenge by ID
+      tags:
+      - challenge
+    put:
+      consumes:
+      - application/json
+      description: Update challenge by ID
+      parameters:
+      - description: Challenge ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Challenge Request
+        in: body
+        name: challenge
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateChallengeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Update challenge by ID
+      tags:
+      - challenge
+  /v1/github/auth:
     get:
       description: Endpoint to log in with GitHub OAuth, it will redirect to GitHub
         OAuth page to authenticate
@@ -187,7 +312,7 @@ paths:
       summary: Login with GitHub
       tags:
       - auth
-  /github/auth/callback:
+  /v1/github/auth/callback:
     get:
       description: Endpoint to handle GitHub OAuth callback, it will exchange code
         for access token and get user data from GitHub, then it will register a new
@@ -203,43 +328,7 @@ paths:
       summary: GitHub Auth Callback
       tags:
       - auth
-  /health:
-    get:
-      consumes:
-      - application/json
-      description: Health check endpoint
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Health check
-      tags:
-      - root
-  /profile:
-    get:
-      description: Get user profile when authenticated with JWT in the cookie
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.ProfileResponse'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Error'
-      security:
-      - CookieAuth: []
-      summary: Get Profile
-      tags:
-      - user
-  /user:
+  /v1/user:
     get:
       description: Get all users from the database
       produces:
@@ -283,7 +372,7 @@ paths:
       summary: Create a new user
       tags:
       - user
-  /user/{username}:
+  /v1/user/{username}:
     delete:
       consumes:
       - application/json
@@ -328,22 +417,25 @@ paths:
       summary: Get user by username
       tags:
       - user
-  /v1:
+  /v1/user/profile:
     get:
-      consumes:
-      - application/json
-      description: Root endpoint
+      description: Get user profile when authenticated with JWT in the cookie
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-      summary: Root
+            $ref: '#/definitions/types.ProfileResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Error'
+      security:
+      - CookieAuth: []
+      summary: Get Profile
       tags:
-      - root
+      - user
   /validateToken:
     post:
       consumes:

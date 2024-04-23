@@ -9,6 +9,7 @@ import (
 
 	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/db"
+	"github.com/xedom/codeduel/types"
 	"github.com/xedom/codeduel/utils"
 
 	httpSwagger "github.com/swaggo/http-swagger/v2"
@@ -68,15 +69,16 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 
 // @host		localhost:5000
 // @schemes	http
-// @basePath	/
 func (s *Server) Run() error {
 	v1 := http.NewServeMux()
-	v1.Handle("/user/", http.StripPrefix("/user", s.GetUserRouter()))
-	v1.Handle("/challenge/", http.StripPrefix("/challenge", s.GetChallengeRouter()))
-	v1.Handle("/auth/github", http.StripPrefix("/auth/github", s.GetGithubAuthRouter()))
+	v1.Handle("/user/", s.GetUserRouter())
+	// v1.Handle("/user/", s.GetUserRouter())
+	// v1.Handle("/user/", http.StripPrefix("/user", s.GetUserRouter()))
+	v1.Handle("/challenge", s.GetChallengeRouter())
+	v1.Handle("/auth/github", s.GetGithubAuthRouter())
 
 	main := http.NewServeMux()
-	main.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))
+	// main.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))
 	main.HandleFunc("/health", makeHTTPHandleFunc(s.handleHealth))
 	main.HandleFunc("POST /validateToken", makeHTTPHandleFunc(s.handleValidateToken)) // TODO: make it accessible only by lobby service
 	main.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL("http://"+s.address+"/docs/doc.json")))
@@ -115,17 +117,6 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) error {
 	})
 }
 
-type JSONResult struct {
-	Code    int         `json:"code" `
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
-
-type Order struct { //in `proto` package
-	Id   uint        `json:"id"`
-	Data interface{} `json:"data"`
-}
-
 // @Summary		Health check
 // @Description	Health check endpoint
 // @Tags			root
@@ -136,6 +127,34 @@ type Order struct { //in `proto` package
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) error {
 	// return WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	return WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// @Summary		Validate JWT Token
+// @Description	Validate if the user JWT token is valid, and return user data. Used from other services to validate user token
+// @Tags			user
+// @Accept			json
+// @Produce		json
+// @Param			token	body		types.VerifyToken	true	"Service token"
+// @Success		200		{object}	types.User
+// @Failure		500		{object}	Error
+// @Router			/validateToken [post]
+func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) error {
+	verifyTokenBody := &types.VerifyToken{}
+	if err := json.NewDecoder(r.Body).Decode(verifyTokenBody); err != nil {
+		return err
+	}
+
+	decodedUserData, err := utils.ValidateUserJWT(verifyTokenBody.JWTToken)
+	if err != nil {
+		return fmt.Errorf("invalid token")
+	}
+
+	// user, err := s.db.GetUserByID(userID)
+	// if err != nil {
+	// 	return err
+	// }
+
+	return WriteJSON(w, http.StatusOK, decodedUserData)
 }
 
 func makeHTTPHandleFunc(fn Handler) http.HandlerFunc {

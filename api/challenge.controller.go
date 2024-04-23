@@ -11,11 +11,11 @@ import (
 
 func (s *Server) GetChallengeRouter() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /", makeHTTPHandleFunc(s.handleGetChallenges))
-	router.HandleFunc("POST /", makeHTTPHandleFunc(s.handleCreateChallenge))
-	router.HandleFunc("GET /{id}", makeHTTPHandleFunc(s.handleGetChallengeByID))
-	router.HandleFunc("PUT /{id}", makeHTTPHandleFunc(s.handleUpdateChallenge))
-	router.HandleFunc("DELETE /{id}", makeHTTPHandleFunc(s.handleDeleteChallenge))
+	router.HandleFunc("GET /challenge", makeHTTPHandleFunc(s.handleGetChallenges))
+	router.HandleFunc("POST /challenge", makeHTTPHandleFunc(s.handleCreateChallenge))
+	router.HandleFunc("GET /challenge/{id}", makeHTTPHandleFunc(s.handleGetChallengeByID))
+	router.HandleFunc("PUT /challenge/{id}", makeHTTPHandleFunc(s.handleUpdateChallenge))
+	router.HandleFunc("DELETE /challenge/{id}", makeHTTPHandleFunc(s.handleDeleteChallenge))
 	return router
 }
 
@@ -25,7 +25,7 @@ func (s *Server) GetChallengeRouter() http.Handler {
 //	@Accept			json
 //	@Produce		json
 //	@Success		200	{object}	types.ChallengeListResponse
-//	@Router			/challenge [get]
+//	@Router			/v1/challenge [get]
 func (s *Server) handleGetChallenges(w http.ResponseWriter, _ *http.Request) error {
 	challenges, err := s.db.GetChallenges()
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *Server) handleGetChallenges(w http.ResponseWriter, _ *http.Request) err
 //	@Produce		json
 //	@Param			challenge	body		types.CreateChallengeRequest	true	"Create Challenge Request"
 //	@Success		200			{object}	types.ChallengeResponse
-//	@Router			/challenge [post]
+//	@Router			/v1/challenge [post]
 func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) error {
 	createChallengeReq := &types.CreateChallengeRequest{}
 	if err := json.NewDecoder(r.Body).Decode(createChallengeReq); err != nil {
@@ -70,6 +70,14 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) e
 	return WriteJSON(w, http.StatusOK, challenge)
 }
 
+//	@Summary		Get challenge by ID
+//	@Description	Get challenge by ID
+//	@Tags			challenge
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Challenge ID"
+//	@Success		200	{object}	types.Challenge
+//	@Router			/v1/challenge/{id} [get]
 func (s *Server) handleGetChallengeByID(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -85,6 +93,15 @@ func (s *Server) handleGetChallengeByID(w http.ResponseWriter, r *http.Request) 
 	return WriteJSON(w, http.StatusOK, challenge)
 }
 
+//	@Summary		Update challenge by ID
+//	@Description	Update challenge by ID
+//	@Tags			challenge
+//	@Accept			json
+//	@Produce		json
+//	@Param			id			path	int								true	"Challenge ID"
+//	@Param			challenge	body	types.UpdateChallengeRequest	true	"Update Challenge Request"
+//	@Success		200
+//	@Router			/v1/challenge/{id} [put]
 func (s *Server) handleUpdateChallenge(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
@@ -107,6 +124,14 @@ func (s *Server) handleUpdateChallenge(w http.ResponseWriter, r *http.Request) e
 	return s.db.UpdateChallenge(challenge)
 }
 
+//	@Summary		Delete challenge by ID
+//	@Description	Delete challenge by ID
+//	@Tags			challenge
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path	int	true	"Challenge ID"
+//	@Success		200
+//	@Router			/v1/challenge/{id} [delete]
 func (s *Server) handleDeleteChallenge(w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {

@@ -10,8 +10,8 @@ import (
 
 func (s *Server) GetGithubAuthRouter() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("/", makeHTTPHandleFunc(s.handleGithubAuth))
-	router.HandleFunc("/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback))
+	router.HandleFunc("GET /auth/github", makeHTTPHandleFunc(s.handleGithubAuth))
+	router.HandleFunc("GET /auth/github/callback", makeHTTPHandleFunc(s.handleGithubAuthCallback))
 	return router
 }
 
@@ -19,7 +19,7 @@ func (s *Server) GetGithubAuthRouter() http.Handler {
 //	@Description	Endpoint to log in with GitHub OAuth, it will redirect to GitHub OAuth page to authenticate
 //	@Tags			auth
 //	@Success		302
-//	@Router			/github/auth [get]
+//	@Router			/v1/github/auth [get]
 func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 
@@ -44,7 +44,7 @@ func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error 
 //	@Tags			auth
 //	@Success		302
 //	@Failure		500	{object} Error
-//	@Router			/github/auth/callback [get]
+//	@Router			/v1/github/auth/callback [get]
 func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 	if !urlParams.Has("code") || !urlParams.Has("state") {
