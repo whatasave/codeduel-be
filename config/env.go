@@ -29,6 +29,9 @@ type Config struct {
 	// CookieMaxAge                 int
 	// CookieExpire                 int
 
+	SSLKey                          string
+	SSLCert                         string
+
 	JWTSecret                       string
 }
 
@@ -67,6 +70,9 @@ func LoadConfig() *Config {
 		// CookieSameSite:                  utils.GetEnv("COOKIE_SAME_SITE", "Lax"),
 		// CookieMaxAge:                    cookieMaxAge,
 		// CookieExpire:                    cookieExpire,
+
+		SSLKey:                          utils.GetEnv("SSL_KEY", "ssl/server.key"),
+		SSLCert:                         utils.GetEnv("SSL_CERT", "ssl/server.crt"),
 
 		JWTSecret:                       utils.GetEnv("JWT_SECRET", "yoooSuperSecret"),
 	}

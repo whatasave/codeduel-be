@@ -1,6 +1,7 @@
-FROM golang:1.21 as build-stage
+FROM golang:1.22 as build-stage
 
 ENV GO_ENV=production
+ENV ENV=production
 
 RUN useradd -u 1001 -m codeduel-user
 
@@ -15,19 +16,17 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o ./bin/codeduel-be -v
 FROM build-stage AS run-test-stage
 RUN go test -v ./...
 
-# FROM alpine:3.14
-# FROM scratch
+
 FROM gcr.io/distroless/base-debian11 AS release-stage
 
-ENV ENV=production
-
-# RUN apk add --no-cache ca-certificates
 COPY --from=build-stage /usr/src/app/bin /usr/local/bin
-# COPY --from=build-stage /usr/src/app/bin/.env /.env
 COPY --from=build-stage /etc/passwd /etc/passwd
 
 USER 1001
-# USER codeduel-user:codeduel-user
-EXPOSE 5000
+
+EXPOSE 443
+EXPOSE 80
+
+VOLUME [ "/ssl/" ]
 
 ENTRYPOINT ["codeduel-be"]
