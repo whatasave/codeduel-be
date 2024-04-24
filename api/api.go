@@ -37,12 +37,33 @@ type Handler func(w http.ResponseWriter, r *http.Request) error
 func NewAPIServer(config *config.Config, db db.DB) *Server {
 	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	log.Printf("%s Starting API server on http://%s", utils.GetLogTag("main"), address)
-	log.Printf("%s Docs http://%s/docs/index.html", utils.GetLogTag("main"), address)
+	log.Printf("%s Docs http://%s/docs", utils.GetLogTag("main"), address)
 	return &Server{
 		config:  config,
 		db:      db,
 		address: address,
 	}
+}
+
+func (s *Server) Run() error {
+	userRouter := http.NewServeMux()
+	userRouter.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("GET /v1/user"))
+	})
+	userRouter.HandleFunc("GET /{username}", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("GET /v1/user/{username}"))
+	})
+
+	v1 := http.NewServeMux()
+	v1.Handle("/user/{pathname...}", http.StripPrefix("/user", userRouter))
+
+	main := http.NewServeMux()
+	main.Handle("/v1/", http.StripPrefix("/v1", v1))
+
+	server := &http.Server{ Addr: "localhost:5000", Handler: main }
+	server.ListenAndServe()
+
+	return nil
 }
 
 //	@title			CodeDuel API
@@ -69,7 +90,7 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 
 // @host		localhost:5000
 // @schemes	http
-func (s *Server) Run() error {
+func (s *Server) RunOld() error {
 	v1 := http.NewServeMux()
 	v1.Handle("/user/", s.GetUserRouter())
 	// v1.Handle("/user/", s.GetUserRouter())
