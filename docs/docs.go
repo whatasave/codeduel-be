@@ -50,6 +50,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/lobby/{lobbyId}/endgame": {
+            "patch": {
+                "description": "Update lobby",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lobby"
+                ],
+                "summary": "Update lobby",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/lobby/{lobbyId}/submission": {
+            "patch": {
+                "description": "Update lobby",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lobby"
+                ],
+                "summary": "Update lobby",
+                "parameters": [
+                    {
+                        "description": "Update Lobby Request",
+                        "name": "lobby",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateLobbyRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/v1": {
             "get": {
                 "description": "Root endpoint",
@@ -259,13 +316,6 @@ const docTemplate = `{
             }
         },
         "/v1/lobby": {
-            "get": {
-                "tags": [
-                    "lobby"
-                ],
-                "summary": "Create a new lobby",
-                "responses": {}
-            },
             "post": {
                 "description": "Create a new lobby and add it to the database",
                 "consumes": [
@@ -290,48 +340,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.Lobby"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Error"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/lobby/{id}": {
-            "put": {
-                "description": "Update lobby",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "lobby"
-                ],
-                "summary": "Update lobby",
-                "parameters": [
-                    {
-                        "description": "Update Lobby Request",
-                        "name": "lobby",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.UpdateLobbyRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.Lobby"
-                        }
+                    "204": {
+                        "description": "No Content"
                     },
                     "500": {
                         "description": "Internal Server Error",
@@ -638,12 +648,7 @@ const docTemplate = `{
             }
         },
         "types.CreateLobbyRequest": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                }
-            }
+            "type": "object"
         },
         "types.CreateUserRequest": {
             "type": "object",
@@ -653,14 +658,6 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
-                }
-            }
-        },
-        "types.Lobby": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
                 }
             }
         },
@@ -722,7 +719,19 @@ const docTemplate = `{
         "types.UpdateLobbyRequest": {
             "type": "object",
             "properties": {
-                "id": {
+                "code": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "tests_passed": {
+                    "type": "integer"
+                },
+                "user_id": {
                     "type": "integer"
                 }
             }
