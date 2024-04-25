@@ -42,7 +42,7 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) error
 // @Description	Update lobby
 // @Tags			lobby
 // @Produce		json
-// @Param			lobby	body	types.UpdateLobbyRequest	true	"Update Lobby Request"
+// @Param			lobby	body	types.LobbyUserSubmissionRequest	true	"Update Lobby Request"
 // @Success		204
 // @Failure		500	{object}	Error
 // @Router			/lobby/{lobbyId}/submission [patch]

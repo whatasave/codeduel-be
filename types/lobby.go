@@ -14,7 +14,7 @@ type CreateLobbyRequest struct {
 	} `json:"settings"`
 }
 
-type UpdateLobbyRequest struct {
+type LobbyUserSubmissionRequest struct {
 	UserId      int       `json:"user_id"`
 	Code        string    `json:"code"`
 	Language    string    `json:"language"`
