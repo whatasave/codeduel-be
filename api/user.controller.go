@@ -13,8 +13,8 @@ import (
 
 func (s *Server) GetUserRouter() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /user/", makeHTTPHandleFunc(s.handleGetUsers))
-	router.HandleFunc("POST /user/", makeHTTPHandleFunc(s.handleCreateUser))
+	router.HandleFunc("GET /user", makeHTTPHandleFunc(s.handleGetUsers))
+	router.HandleFunc("POST /user", makeHTTPHandleFunc(s.handleCreateUser))
 	router.HandleFunc("GET /user/{username}", makeHTTPHandleFunc(s.handleGetUserByUsername))
 	router.HandleFunc("DELETE /user/{username}", makeHTTPHandleFunc(s.handleDeleteUserByUsername))
 	router.HandleFunc("GET /user/profile", makeHTTPHandleFunc(s.handleProfile))
