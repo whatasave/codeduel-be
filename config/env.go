@@ -7,6 +7,7 @@ import (
 type Config struct {
 	Host                            string
 	Port                            string
+	PortHttp                        string
 
 	MariaDBHost                     string
 	MariaDBPort                     string
@@ -49,6 +50,7 @@ func LoadConfig() *Config {
 	return &Config{
 		Host:                            utils.GetEnv("HOST", "localhost"),
 		Port:                            utils.GetEnv("PORT", "5000"),
+		PortHttp:                        utils.GetEnv("PORT", "5001"),
 
 		MariaDBHost:                     utils.GetEnv("MARIADB_HOST", "localhost"),
 		MariaDBPort:                     utils.GetEnv("MARIADB_PORT", "3306"),

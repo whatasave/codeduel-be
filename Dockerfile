@@ -22,6 +22,12 @@ FROM gcr.io/distroless/base-debian11 AS release-stage
 COPY --from=build-stage /usr/src/app/bin /usr/local/bin
 COPY --from=build-stage /etc/passwd /etc/passwd
 
+ENV ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=443
+ENV PORT=80
+ENV COOKIE_DOMAIN=*
+
 USER 1001
 
 EXPOSE 443

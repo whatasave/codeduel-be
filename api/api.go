@@ -87,10 +87,10 @@ func (s *Server) Run() error {
 	main.Handle("/v1/", http.StripPrefix("/v1", v1))
 	
 	server := &http.Server{
-		Addr:    "0.0.0.0:80",
+		Addr:    fmt.Sprintf("%s:%s", s.config.Host, s.config.PortHttp),
 		Handler: ChainMiddleware(CorsMiddleware, LoggingMiddleware)(main),
 	}
-	
+
 	serverSSL := &http.Server{
 		Addr:    s.address,
 		Handler: ChainMiddleware(CorsMiddleware, LoggingMiddleware)(main),
