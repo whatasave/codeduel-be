@@ -10,17 +10,9 @@ import (
 
 func (s *Server) GetLobbyRouter() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /lobby", makeHTTPHandleFunc(s.handleGetLobby))
 	router.HandleFunc("POST /lobby", makeHTTPHandleFunc(s.handleCreateLobby))
 	router.HandleFunc("PUT /lobby/{id}", makeHTTPHandleFunc(s.handleGetLobbyByID))
 	return router
-}
-
-//	@Summary	Create a new lobby
-//	@Tags		lobby
-//	@Router		/v1/lobby [get]
-func (s *Server) handleGetLobby(w http.ResponseWriter, r *http.Request) error {
-	return WriteJSON(w, http.StatusOK, "handleGetLobby")
 }
 
 //	@Summary		Create a new lobby
