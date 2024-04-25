@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/types"
 	"github.com/xedom/codeduel/utils"
 )
@@ -55,6 +56,18 @@ func CorsMiddleware(next http.Handler) http.Handler {
 		w.Header().Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Add("Access-Control-Allow-Headers", "Content-Type, x-jwt-token")
 		w.Header().Add("Access-Control-Allow-Credentials", "true")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func OnlyInternalServiceMiddleware(config *config.Config, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("x-service-token")
+		if token != config.ServiceToken {
+			_ = WriteJSON(w, http.StatusUnauthorized, Error{Err: "Unauthorized"})
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

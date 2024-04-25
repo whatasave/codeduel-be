@@ -56,12 +56,22 @@ definitions:
       title:
         type: string
     type: object
+  types.CreateLobbyRequest:
+    properties:
+      id:
+        type: integer
+    type: object
   types.CreateUserRequest:
     properties:
       email:
         type: string
       username:
         type: string
+    type: object
+  types.Lobby:
+    properties:
+      id:
+        type: integer
     type: object
   types.ProfileResponse:
     properties:
@@ -98,6 +108,11 @@ definitions:
         type: integer
       title:
         type: string
+    type: object
+  types.UpdateLobbyRequest:
+    properties:
+      id:
+        type: integer
     type: object
   types.User:
     properties:
@@ -328,6 +343,56 @@ paths:
       summary: GitHub Auth Callback
       tags:
       - auth
+  /v1/lobby:
+    post:
+      consumes:
+      - application/json
+      description: Create a new lobby and add it to the database
+      parameters:
+      - description: Create Lobby Request
+        in: body
+        name: lobby
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateLobbyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Lobby'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Error'
+      summary: Create a new lobby
+      tags:
+      - lobby
+  /v1/lobby/{id}:
+    put:
+      description: Update lobby
+      parameters:
+      - description: Update Lobby Request
+        in: body
+        name: lobby
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateLobbyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Lobby'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Error'
+      summary: Update lobby
+      tags:
+      - lobby
   /v1/user:
     get:
       description: Get all users from the database
