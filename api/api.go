@@ -1,11 +1,13 @@
 package api
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/db"
@@ -71,7 +73,9 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 // @basePath	/
 func (s *Server) Run() error {
 	v1 := http.NewServeMux()
-	v1.Handle("/user/", http.StripPrefix("/user", s.GetUserRouter()))
+	v1.Handle("/user", s.GetUserRouter())
+	v1.Handle("/user/", s.GetUserRouter())
+	v1.Handle("/challenge", http.StripPrefix("/challenge", s.GetChallengeRouter()))
 	v1.Handle("/challenge/", http.StripPrefix("/challenge", s.GetChallengeRouter()))
 	v1.Handle("/auth/github", http.StripPrefix("/auth/github", s.GetGithubAuthRouter()))
 
@@ -81,20 +85,54 @@ func (s *Server) Run() error {
 	main.HandleFunc("POST /validateToken", makeHTTPHandleFunc(s.handleValidateToken)) // TODO: make it accessible only by lobby service
 	main.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL("http://"+s.address+"/docs/doc.json")))
 	main.Handle("/v1/", http.StripPrefix("/v1", v1))
-
+	
 	server := &http.Server{
-		Addr:    s.address,
+		Addr:    fmt.Sprintf("%s:%s", s.config.Host, s.config.PortHttp),
 		Handler: ChainMiddleware(CorsMiddleware, LoggingMiddleware)(main),
 	}
 
-	err := server.ListenAndServe()
-
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("failed to listen on %s: %w", s.address, err)
+	serverSSL := &http.Server{
+		Addr:    s.address,
+		Handler: ChainMiddleware(CorsMiddleware, LoggingMiddleware)(main),
+		TLSConfig: &tls.Config{},
 	}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		log.Printf("%s HTTPS server starting...", utils.GetLogTag("info"))
+		err := serverSSL.ListenAndServeTLS(s.config.SSLCert, s.config.SSLKey)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("%s failed to start HTTPS server: %s", utils.GetLogTag("error"), err.Error())
+		} else if errors.Is(err, http.ErrServerClosed) {
+			log.Printf("%s HTTPS server closed", utils.GetLogTag("error"))
+		} else {
+			log.Printf("%s HTTPS server started", utils.GetLogTag("info"))
+		}
+
+		wg.Done()
+	}()
+
+	go func() {
+		log.Printf("%s HTTP server starting...", utils.GetLogTag("info"))
+		err := server.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("%s failed to start HTTP server: %s", utils.GetLogTag("error"), err.Error())
+		} else if errors.Is(err, http.ErrServerClosed) {
+			log.Printf("%s HTTP server closed", utils.GetLogTag("error"))
+		} else {
+			log.Printf("%s HTTP server started", utils.GetLogTag("info"))
+		}
+
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	return nil
 }
+
 
 // @Summary		Root
 // @Description	Root endpoint
@@ -113,17 +151,6 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) error {
 		"status":  "ok",
 		"apis":    swaggerUrl,
 	})
-}
-
-type JSONResult struct {
-	Code    int         `json:"code" `
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
-}
-
-type Order struct { //in `proto` package
-	Id   uint        `json:"id"`
-	Data interface{} `json:"data"`
 }
 
 // @Summary		Health check
