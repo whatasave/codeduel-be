@@ -99,6 +99,7 @@ func (s *Server) RunOld() error {
 	v1.Handle("/challenge", http.StripPrefix("/challenge", s.GetChallengeRouter()))
 	v1.Handle("/challenge/", http.StripPrefix("/challenge", s.GetChallengeRouter()))
 	v1.Handle("/auth/github", http.StripPrefix("/auth/github", s.GetGithubAuthRouter()))
+	v1.Handle("/auth/github/", http.StripPrefix("/auth/github", s.GetGithubAuthRouter()))
 
 	main := http.NewServeMux()
 	// main.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))
