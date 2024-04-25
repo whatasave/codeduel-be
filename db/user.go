@@ -21,7 +21,7 @@ func (m *MariaDB) CreateUser(user *types.User) error {
 		return err
 	}
 
-	user.ID = id
+	user.Id = id
 	return err
 }
 
@@ -46,7 +46,7 @@ func (m *MariaDB) getLastInsertID() (int, error) {
 
 func (m *MariaDB) CreateAuth(auth *types.AuthEntry) error {
 	query := `INSERT INTO auth (user_id, provider, provider_id) VALUES (?, ?, ?);`
-	_, err := m.db.Exec(query, auth.UserID, auth.Provider, auth.ProviderID)
+	_, err := m.db.Exec(query, auth.UserId, auth.Provider, auth.ProviderId)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (m *MariaDB) CreateAuth(auth *types.AuthEntry) error {
 		return err
 	}
 
-	auth.ID = id
+	auth.Id = id
 	return err
 }
 
@@ -112,12 +112,12 @@ func (m *MariaDB) DeleteUserByUsername(username string) error {
 
 func (m *MariaDB) UpdateUser(user *types.User) error {
 	query := `UPDATE user SET username = ?, email = ?, avatar = ? WHERE id = ?;`
-	res, err := m.db.Exec(query, user.Username, user.Email, user.Avatar, user.ID)
+	res, err := m.db.Exec(query, user.Username, user.Email, user.Avatar, user.Id)
 	if err != nil {
 		return err
 	}
 	if rows, _ := res.RowsAffected(); rows == 0 {
-		return fmt.Errorf("user with id %d not found", user.ID)
+		return fmt.Errorf("user with id %d not found", user.Id)
 	}
 
 	return err
@@ -210,7 +210,7 @@ func (m *MariaDB) GetUserStats(id int) ([]*types.UserStatsParsed, error) {
 	for rows.Next() {
 		stat := &types.UserStatsParsed{}
 		if err := rows.Scan(
-			&stat.ID,
+			&stat.Id,
 			&stat.Name,
 			&stat.Stat,
 			&stat.CreatedAt,
@@ -325,7 +325,7 @@ func (m *MariaDB) parseUser(row *sql.Rows) (*types.User, error) {
 	user := &types.User{}
 	user_avatar := sql.NullString{}
 	if err := row.Scan(
-		&user.ID,
+		&user.Id,
 		&user.Username,
 		&user.Name,
 		&user.Email,
@@ -367,10 +367,10 @@ func (m *MariaDB) parseUserResponse(row *sql.Rows) (*types.UserResponse, error) 
 func (m *MariaDB) parseAuth(row *sql.Rows) (*types.AuthEntry, error) {
 	auth := &types.AuthEntry{}
 	if err := row.Scan(
-		&auth.ID,
-		&auth.UserID,
+		&auth.Id,
+		&auth.UserId,
 		&auth.Provider,
-		&auth.ProviderID,
+		&auth.ProviderId,
 		&auth.CreatedAt,
 		&auth.UpdatedAt,
 	); err != nil {

@@ -74,7 +74,7 @@ const docTemplate = `{
             }
         },
         "/lobby/{lobbyId}/submission": {
-            "patch": {
+            "post": {
                 "description": "Update lobby",
                 "produces": [
                     "application/json"
@@ -90,7 +90,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.UpdateLobbyRequest"
+                            "$ref": "#/definitions/types.LobbyUserSubmissionRequest"
                         }
                     }
                 ],
@@ -661,6 +661,26 @@ const docTemplate = `{
                 }
             }
         },
+        "types.LobbyUserSubmissionRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "tests_passed": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "types.ProfileResponse": {
             "type": "object",
             "properties": {
@@ -713,26 +733,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "types.UpdateLobbyRequest": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string"
-                },
-                "date": {
-                    "type": "string"
-                },
-                "language": {
-                    "type": "string"
-                },
-                "tests_passed": {
-                    "type": "integer"
-                },
-                "user_id": {
-                    "type": "integer"
                 }
             }
         },

@@ -31,9 +31,18 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) error
 	if err := json.NewDecoder(r.Body).Decode(createLobbyPayload); err != nil {
 		return err
 	}
-
 	log.Print("[API] Creating lobby ", createLobbyPayload)
-	lobby := &types.Lobby{Id: 1}
+
+	lobby := &types.Lobby{
+		UniqueId:    createLobbyPayload.LobbyId,
+		OwnerId:     createLobbyPayload.OwnerId,
+		UsersId:     createLobbyPayload.UsersId,
+		ChallengeId: createLobbyPayload.ChallengeId,
+
+		MaxPlayers:       createLobbyPayload.Settings.MaxPlayers,
+		GameDuration:     createLobbyPayload.Settings.GameDuration,
+		AllowedLanguages: createLobbyPayload.Settings.AllowedLanguages,
+	}
 
 	return WriteJSON(w, http.StatusOK, lobby)
 }
@@ -45,12 +54,18 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) error
 // @Param			lobby	body	types.LobbyUserSubmissionRequest	true	"Update Lobby Request"
 // @Success		204
 // @Failure		500	{object}	Error
-// @Router			/lobby/{lobbyId}/submission [patch]
+// @Router			/lobby/{lobbyId}/submission [post]
 func (s *Server) handleLobbyUserSubmission(w http.ResponseWriter, r *http.Request) error {
 	lobbyId := r.PathValue("lobbyId")
-	log.Print("[API] Lobby user submission ", lobbyId)
+	lobbySubmissionPayload := &types.LobbyUserSubmissionRequest{}
+	if err := json.NewDecoder(r.Body).Decode(lobbySubmissionPayload); err != nil {
+		return err
+	}
 
-	return WriteJSON(w, http.StatusNoContent, lobbyId)
+	log.Print("[API] Lobby user submission ", lobbyId, lobbySubmissionPayload)
+
+	w.WriteHeader(http.StatusNoContent)
+	return nil
 }
 
 // @Summary		Update lobby
@@ -64,5 +79,6 @@ func (s *Server) handleLobbyEnd(w http.ResponseWriter, r *http.Request) error {
 	lobbyId := r.PathValue("lobbyId")
 	log.Print("[API] Lobby end ", lobbyId)
 
-	return WriteJSON(w, http.StatusNoContent, lobbyId)
+	w.WriteHeader(http.StatusNoContent)
+	return nil
 }

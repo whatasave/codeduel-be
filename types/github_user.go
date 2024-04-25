@@ -1,12 +1,13 @@
 package types
 
 type AuthEntry struct {
-	ID         int    `json:"id"`
-	UserID     int    `json:"user_id"`
+	Id         int    `json:"id"`
+	UserId     int    `json:"user_id"`
 	Provider   string `json:"provider"`
-	ProviderID string `json:"provider_id"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
+	ProviderId string `json:"provider_id"`
+
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type GithubUser struct {
@@ -40,8 +41,9 @@ type GithubUser struct {
 	PublicGists       int    `json:"public_gists"`
 	Followers         int    `json:"followers"`
 	Following         int    `json:"following"`
-	CreatedAt         string `json:"created_at"`
-	UpdatedAt         string `json:"updated_at"`
+
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type GithubEmails struct {

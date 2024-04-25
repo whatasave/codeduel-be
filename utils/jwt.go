@@ -20,7 +20,7 @@ func ValidateUserJWT(tokenString string) (*types.UserRequestHeader, error) {
 	// https://auth0.com/docs/secure/tokens/json-web-tokens/json-web-token-claims#registered-claims
 	claims := token.Claims.(jwt.MapClaims)
 	userHeader := &types.UserRequestHeader{
-		ID:       int(claims["sub"].(float64)),
+		Id:       int(claims["sub"].(float64)),
 		Username: claims["username"].(string),
 		Email:    claims["email"].(string),
 		Avatar:   claims["avatar"].(string),
@@ -56,7 +56,7 @@ func CreateJWT(user *types.User) (*JWT, error) {
 
 	claims := &jwt.MapClaims{
 		"iss": "codeduel",
-		"sub": user.ID,
+		"sub": user.Id,
 		"exp": expiresAt,
 
 		// custom claims

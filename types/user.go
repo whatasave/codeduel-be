@@ -10,7 +10,7 @@ type VerifyToken struct {
 }
 
 type UserRequestHeader struct {
-	ID       int    `json:"id"`
+	Id       int    `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Avatar   string `json:"avatar"`
@@ -19,36 +19,39 @@ type UserRequestHeader struct {
 }
 
 type User struct {
-	ID            int    `json:"id"`
+	Id            int    `json:"id"`
 	Name          string `json:"name"`
 	Username      string `json:"username"`
 	Email         string `json:"email"`
 	Avatar        string `json:"avatar"`
 	BackgroundImg string `json:"background_img"`
 	Bio           string `json:"bio"`
-	CreatedAt     string `json:"created_at"`
-	UpdatedAt     string `json:"updated_at"`
+
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type UserStats struct {
-	ID        int    `json:"id"`
-	UserID    int    `json:"user_id"`
-	StatsID   int    `json:"stats_id"`
-	Stat      string `json:"stat"`
+	Id      int    `json:"id"`
+	UserId  int    `json:"user_id"`
+	StatsId int    `json:"stats_id"`
+	Stat    string `json:"stat"`
+
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
 
 type UserStatsParsed struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Stat      string `json:"stat"`
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+	Stat string `json:"stat"`
+
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
 
 type Stats struct {
-	ID   int    `json:"id"`
+	Id   int    `json:"id"`
 	Name string `json:"name"`
 }
 

@@ -65,6 +65,19 @@ definitions:
       username:
         type: string
     type: object
+  types.LobbyUserSubmissionRequest:
+    properties:
+      code:
+        type: string
+      date:
+        type: string
+      language:
+        type: string
+      tests_passed:
+        type: integer
+      user_id:
+        type: integer
+    type: object
   types.ProfileResponse:
     properties:
       avatar:
@@ -100,19 +113,6 @@ definitions:
         type: integer
       title:
         type: string
-    type: object
-  types.UpdateLobbyRequest:
-    properties:
-      code:
-        type: string
-      date:
-        type: string
-      language:
-        type: string
-      tests_passed:
-        type: integer
-      user_id:
-        type: integer
     type: object
   types.User:
     properties:
@@ -218,7 +218,7 @@ paths:
       tags:
       - lobby
   /lobby/{lobbyId}/submission:
-    patch:
+    post:
       description: Update lobby
       parameters:
       - description: Update Lobby Request
@@ -226,7 +226,7 @@ paths:
         name: lobby
         required: true
         schema:
-          $ref: '#/definitions/types.UpdateLobbyRequest'
+          $ref: '#/definitions/types.LobbyUserSubmissionRequest'
       produces:
       - application/json
       responses:

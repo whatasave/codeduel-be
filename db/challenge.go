@@ -34,7 +34,7 @@ func (m *MariaDB) GetChallenges() (*[]types.Challenge, error) {
 	challenges := &[]types.Challenge{}
 	for rows.Next() {
 		var challenge types.Challenge
-		err := rows.Scan(&challenge.ID, &challenge.OwnerID, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
+		err := rows.Scan(&challenge.Id, &challenge.OwnerId, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +67,7 @@ func (m *MariaDB) GetChallengeByID(id int) (*types.Challenge, error) {
 
 func (m *MariaDB) CreateChallenge(challenge *types.Challenge) error {
 	query := "INSERT INTO `challenge` (owner_id, title, description, content) VALUES (?, ?, ?, ?);"
-	res, err := m.db.Exec(query, challenge.OwnerID, challenge.Title, challenge.Description, challenge.Content)
+	res, err := m.db.Exec(query, challenge.OwnerId, challenge.Title, challenge.Description, challenge.Content)
 	if err != nil {
 		return err
 	}
@@ -75,13 +75,13 @@ func (m *MariaDB) CreateChallenge(challenge *types.Challenge) error {
 	if err != nil {
 		return err
 	}
-	challenge.ID = int(id)
+	challenge.Id = int(id)
 	return nil
 }
 
 func (m *MariaDB) UpdateChallenge(challenge *types.Challenge) error {
 	query := "UPDATE `challenge` SET title = ?, description = ?, content = ? WHERE id = ?;"
-	_, err := m.db.Exec(query, challenge.Title, challenge.Description, challenge.Content, challenge.ID)
+	_, err := m.db.Exec(query, challenge.Title, challenge.Description, challenge.Content, challenge.Id)
 	return err
 }
 
@@ -93,7 +93,7 @@ func (m *MariaDB) DeleteChallenge(id int) error {
 
 func (m *MariaDB) parseChallenge(rows *sql.Rows) (*types.Challenge, error) {
 	var challenge types.Challenge
-	err := rows.Scan(&challenge.ID, &challenge.OwnerID, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
+	err := rows.Scan(&challenge.Id, &challenge.OwnerId, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (m *MariaDB) GetChallengesByOwnerID(ownerID int) (*[]types.Challenge, error
 	challenges := &[]types.Challenge{}
 	for rows.Next() {
 		var challenge types.Challenge
-		err := rows.Scan(&challenge.ID, &challenge.OwnerID, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
+		err := rows.Scan(&challenge.Id, &challenge.OwnerId, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

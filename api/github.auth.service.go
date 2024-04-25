@@ -60,9 +60,9 @@ func RegisterGithubUser(db db.DB, githubUser *types.GithubUser) (*types.User, er
 
 	// create auth
 	auth := &types.AuthEntry{
-		UserID:     user.ID,
+		UserId:     user.Id,
 		Provider:   "github",
-		ProviderID: fmt.Sprintf("%d", githubUser.Id),
+		ProviderId: fmt.Sprintf("%d", githubUser.Id),
 	}
 	errAuth := db.CreateAuth(auth)
 	if errAuth != nil {
@@ -73,5 +73,5 @@ func RegisterGithubUser(db db.DB, githubUser *types.GithubUser) (*types.User, er
 }
 
 func LoginGithubUser(db db.DB, auth *types.AuthEntry) (*types.User, error) {
-	return db.GetUserByID(auth.UserID)
+	return db.GetUserByID(auth.UserId)
 }

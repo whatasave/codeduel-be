@@ -89,10 +89,10 @@ func (s *Server) Run() error {
 	// main.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL("http://"+s.address+"/docs/doc.json")))
 	main.HandleFunc("/docs/", httpSwagger.Handler())
 	main.Handle("/v1/", http.StripPrefix("/v1", v1))
-	
+
 	serverSSL := &http.Server{
-		Addr:    s.address,
-		Handler: ChainMiddleware(CorsMiddleware, LoggingMiddleware)(main),
+		Addr:      s.address,
+		Handler:   ChainMiddleware(CorsMiddleware, LoggingMiddleware)(main),
 		TLSConfig: &tls.Config{},
 	}
 
@@ -138,7 +138,6 @@ func (s *Server) Run() error {
 
 	return nil
 }
-
 
 // @Summary		Root
 // @Description	Root endpoint

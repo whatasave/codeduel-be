@@ -23,5 +23,17 @@ type LobbyUserSubmissionRequest struct {
 }
 
 type Lobby struct {
-	Id int `json:"id"`
+	Id          int    `json:"id"`
+	UniqueId    string `json:"uuid"`
+	OwnerId     int    `json:"owner_id"`
+	UsersId     []int  `json:"users_id"`
+	ChallengeId int    `json:"challenge_id"`
+
+	// Settings
+	MaxPlayers       int           `json:"max_players"`
+	GameDuration     time.Duration `json:"game_duration"`
+	AllowedLanguages []string      `json:"allowed_languages"`
+
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }

@@ -100,7 +100,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), AuthUser, userHeader)
 		r = r.WithContext(ctx)
 
-		r.Header.Set("x-user-id", fmt.Sprintf("%d", userHeader.ID))
+		r.Header.Set("x-user-id", fmt.Sprintf("%d", userHeader.Id))
 		r.Header.Set("x-user-username", userHeader.Username)
 		r.Header.Set("x-user-email", userHeader.Email)
 
