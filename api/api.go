@@ -69,18 +69,18 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 //	@externalDocs.description	OpenAPI
 //	@externalDocs.url			https://swagger.io/resources/open-api/
 
-// @host		localhost:5000
+// @host		localhost
 // @schemes	http
 func (s *Server) Run() error {
 	v1 := http.NewServeMux()
-	v1.Handle("/user", http.StripPrefix("/user", s.GetUserRouter()))
-	v1.Handle("/user/", http.StripPrefix("/user", s.GetUserRouter()))
-	v1.Handle("/lobby", http.StripPrefix("/lobby", s.GetLobbyRouter()))
-	v1.Handle("/lobby/", http.StripPrefix("/lobby", s.GetLobbyRouter()))
-	v1.Handle("/challenge", http.StripPrefix("/challenge", s.GetChallengeRouter()))
-	v1.Handle("/challenge/", http.StripPrefix("/challenge", s.GetChallengeRouter()))
-	v1.Handle("/auth/github", http.StripPrefix("/auth/github", s.GetGithubAuthRouter()))
-	v1.Handle("/auth/github/", http.StripPrefix("/auth/github", s.GetGithubAuthRouter()))
+	v1.Handle("/user", s.GetUserRouter())
+	v1.Handle("/user/", s.GetUserRouter())
+	v1.Handle("/lobby", s.GetLobbyRouter())
+	v1.Handle("/lobby/", s.GetLobbyRouter())
+	v1.Handle("/challenge", s.GetChallengeRouter())
+	v1.Handle("/challenge/", s.GetChallengeRouter())
+	v1.Handle("/auth/github", s.GetGithubAuthRouter())
+	v1.Handle("/auth/github/", s.GetGithubAuthRouter())
 
 	main := http.NewServeMux()
 	main.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))

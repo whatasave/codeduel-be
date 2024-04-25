@@ -259,6 +259,13 @@ const docTemplate = `{
             }
         },
         "/v1/lobby": {
+            "get": {
+                "tags": [
+                    "lobby"
+                ],
+                "summary": "Create a new lobby",
+                "responses": {}
+            },
             "post": {
                 "description": "Create a new lobby and add it to the database",
                 "consumes": [
@@ -824,7 +831,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:5000",
+	Host:             "localhost",
 	BasePath:         "",
 	Schemes:          []string{"http"},
 	Title:            "CodeDuel API",

@@ -18,7 +18,7 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:5000",
+    "host": "localhost",
     "paths": {
         "/health": {
             "get": {
@@ -255,6 +255,13 @@
             }
         },
         "/v1/lobby": {
+            "get": {
+                "tags": [
+                    "lobby"
+                ],
+                "summary": "Create a new lobby",
+                "responses": {}
+            },
             "post": {
                 "description": "Create a new lobby and add it to the database",
                 "consumes": [

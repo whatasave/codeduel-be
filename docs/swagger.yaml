@@ -171,7 +171,7 @@ definitions:
 externalDocs:
   description: OpenAPI
   url: https://swagger.io/resources/open-api/
-host: localhost:5000
+host: localhost
 info:
   contact:
     email: support@codeduel
@@ -344,6 +344,11 @@ paths:
       tags:
       - auth
   /v1/lobby:
+    get:
+      responses: {}
+      summary: Create a new lobby
+      tags:
+      - lobby
     post:
       consumes:
       - application/json
