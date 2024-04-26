@@ -30,6 +30,11 @@ type DB interface {
 	UpdateChallenge(*types.Challenge) error
 	DeleteChallenge(int) error
 
+	CreateLobby(*types.Lobby) error
+	CreateLobbyUserSubmission(*types.LobbyUser) error
+	GetLobbyByUniqueId(string) (*types.Lobby, error)
+	EndLobby(string) error
+
 	GetAuthByProviderAndID(string, string) (*types.AuthEntry, error)
 	CreateAuth(*types.AuthEntry) error
 }

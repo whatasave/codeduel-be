@@ -27,18 +27,21 @@ func main() {
 		loadConfig.MariaDBDatabase,
 	)
 	if err != nil {
-		log.Printf("%s Error creating DB instance: %v", utils.GetLogTag("DB"), err.Error())
+		log.Printf("%s%s Error creating DB instance: %v", utils.GetLogTag("DB"), utils.GetLogTag("error"), err.Error())
 		return
 	}
 	if mariaDB == nil {
-		log.Printf("%s Error creating DB instance: %v", utils.GetLogTag("DB"), "DB instance is nil")
+		log.Printf("%s%s Error creating DB instance: %v", utils.GetLogTag("DB"), utils.GetLogTag("error"), "DB instance is nil")
 		return
 	}
 	if err := mariaDB.InitUserTables(); err != nil {
-		log.Printf("%s Error initializing DB user tables: %v", utils.GetLogTag("DB"), err.Error())
+		log.Printf("%s%s Error initializing DB user tables: %v", utils.GetLogTag("DB"), utils.GetLogTag("error"), err.Error())
 	}
 	if err := mariaDB.InitMatchTables(); err != nil {
-		log.Printf("%s Error initializing DB match tables: %v", utils.GetLogTag("DB"), err.Error())
+		log.Printf("%s%s Error initializing DB match tables: %v", utils.GetLogTag("DB"), utils.GetLogTag("error"), err.Error())
+	}
+	if err := mariaDB.InitLobbyTables(); err != nil {
+		log.Printf("%s%s Error initializing DB lobby tables: %v", utils.GetLogTag("DB"), utils.GetLogTag("error"), err.Error())
 	}
 
 	server := api.NewAPIServer(loadConfig, mariaDB)

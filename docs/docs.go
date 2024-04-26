@@ -50,7 +50,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/lobby/{lobbyId}/endgame": {
+        "/lobby/{lobbyUniqueId}/endgame": {
             "patch": {
                 "description": "Update lobby",
                 "produces": [
@@ -73,7 +73,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/lobby/{lobbyId}/submission": {
+        "/lobby/{lobbyUniqueId}/submission": {
             "post": {
                 "description": "Update lobby",
                 "produces": [
@@ -97,6 +97,12 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/api.Error"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",

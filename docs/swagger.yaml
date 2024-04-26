@@ -202,7 +202,7 @@ paths:
       summary: Health check
       tags:
       - root
-  /lobby/{lobbyId}/endgame:
+  /lobby/{lobbyUniqueId}/endgame:
     patch:
       description: Update lobby
       produces:
@@ -217,7 +217,7 @@ paths:
       summary: Update lobby
       tags:
       - lobby
-  /lobby/{lobbyId}/submission:
+  /lobby/{lobbyUniqueId}/submission:
     post:
       description: Update lobby
       parameters:
@@ -232,6 +232,10 @@ paths:
       responses:
         "204":
           description: No Content
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/api.Error'
         "500":
           description: Internal Server Error
           schema:
