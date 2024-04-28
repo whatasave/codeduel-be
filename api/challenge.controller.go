@@ -12,10 +12,10 @@ import (
 func (s *Server) GetChallengeRouter() http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /challenge", makeHTTPHandleFunc(s.handleGetChallenges))
-	router.HandleFunc("POST /challenge", makeHTTPHandleFunc(s.handleCreateChallenge))
+	router.HandleFunc("POST /challenge", AuthMiddleware(makeHTTPHandleFunc(s.handleCreateChallenge)))
 	router.HandleFunc("GET /challenge/{id}", makeHTTPHandleFunc(s.handleGetChallengeByID))
-	router.HandleFunc("PUT /challenge/{id}", makeHTTPHandleFunc(s.handleUpdateChallenge))
-	router.HandleFunc("DELETE /challenge/{id}", makeHTTPHandleFunc(s.handleDeleteChallenge))
+	router.HandleFunc("PUT /challenge/{id}", AuthMiddleware(makeHTTPHandleFunc(s.handleUpdateChallenge)))
+	router.HandleFunc("DELETE /challenge/{id}", AuthMiddleware(makeHTTPHandleFunc(s.handleDeleteChallenge)))
 	return router
 }
 
@@ -49,9 +49,9 @@ func (s *Server) handleCreateChallenge(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	user, err := GetUserFromDB(r, s.db)
-	if err != nil {
-		return err
+	user := GetAuthUser(r)
+	if user == nil {
+		return WriteJSON(w, http.StatusUnauthorized, "")
 	}
 
 	log.Print("[API] Creating new challenge ", createChallengeReq)
@@ -108,6 +108,21 @@ func (s *Server) handleUpdateChallenge(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
+	user := GetAuthUser(r)
+	if user == nil {
+		return WriteJSON(w, http.StatusUnauthorized, "")
+	}
+	// Unauthorized if user is not admin or owner
+	if user.Role != "admin" {
+		challenge, err := s.db.GetChallengeByID(id)
+		if err != nil {
+			return err
+		}
+		if challenge.OwnerId != user.Id {
+			return WriteJSON(w, http.StatusUnauthorized, "")
+		}
+	}
+
 	updateChallengeReq := &types.UpdateChallengeRequest{}
 	if err := json.NewDecoder(r.Body).Decode(updateChallengeReq); err != nil {
 		return err
@@ -136,6 +151,22 @@ func (s *Server) handleDeleteChallenge(w http.ResponseWriter, r *http.Request) e
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		return err
+	}
+
+	user := GetAuthUser(r)
+	if user == nil {
+		return WriteJSON(w, http.StatusUnauthorized, "")
+	}
+
+	// Unauthorized if user is not admin or owner
+	if user.Role != "admin" {
+		challenge, err := s.db.GetChallengeByID(id)
+		if err != nil {
+			return err
+		}
+		if challenge.OwnerId != user.Id {
+			return WriteJSON(w, http.StatusUnauthorized, "")
+		}
 	}
 
 	log.Print("[API] Deleting challenge ", id)

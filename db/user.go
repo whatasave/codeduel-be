@@ -61,25 +61,29 @@ func (m *MariaDB) CreateAuth(auth *types.AuthEntry) error {
 }
 
 func (m *MariaDB) GetAuthByProviderAndID(provider, providerID string) (*types.AuthEntry, error) {
-	query := `SELECT * FROM auth WHERE provider = ? AND provider_id = ?;`
+	query := `SELECT * FROM auth WHERE provider = ? AND provider_id = ? LIMIT 1;`
 	rows, err := m.db.Query(query, provider, providerID)
 	if err != nil {
 		return nil, err
 	}
-	defer func(rows *sql.Rows) {
-		if err := rows.Close(); err != nil {
-			fmt.Println("DB(GetAuthByProviderAndID):", err)
-		}
-	}(rows)
 
 	for rows.Next() {
-		return m.parseAuth(rows)
+		auth := &types.AuthEntry{}
+		if err := rows.Scan(&auth.Id, &auth.UserId, &auth.Provider, &auth.ProviderId, &auth.CreatedAt, &auth.UpdatedAt); err != nil {
+			return nil, err
+		}
+
+		return auth, nil
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return nil, fmt.Errorf("auth with provider_id %s not found", providerID)
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return nil, fmt.Errorf("DB(GetAuthByProviderAndID): auth with provider %s and provider_id %s not found", provider, providerID)
 }
 
 func (m *MariaDB) DeleteUser(id int) error {
@@ -124,7 +128,7 @@ func (m *MariaDB) UpdateUser(user *types.User) error {
 }
 
 func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
-	query := `SELECT user.name, username, avatar, background_img, bio, created_at FROM user;`
+	query := `SELECT user.name, username, avatar, background_img, bio, role, created_at FROM user;`
 	rows, err := m.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -132,9 +136,13 @@ func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
 
 	var users []*types.UserResponse
 	for rows.Next() {
-		user, err := m.parseUserResponse(rows)
-		if err != nil {
+		user := &types.UserResponse{}
+		user_avatar := sql.NullString{}
+		if err := rows.Scan(&user.Name, &user.Username, &user.Avatar, &user.BackgroundImg, &user.Bio, &user.Role, &user.CreatedAt); err != nil {
 			return nil, err
+		}
+		if user_avatar.Valid {
+			user.Avatar = user_avatar.String
 		}
 		users = append(users, user)
 	}
@@ -253,6 +261,7 @@ func (m *MariaDB) createUserTable() error {
 		avatar VARCHAR(255),
 		background_img VARCHAR(255) DEFAULT '',
 		bio TEXT DEFAULT (''),
+		role VARCHAR(50) DEFAULT 'user',
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		PRIMARY KEY (id),
@@ -332,6 +341,7 @@ func (m *MariaDB) parseUser(row *sql.Rows) (*types.User, error) {
 		&user.Avatar,
 		&user.BackgroundImg,
 		&user.Bio,
+		&user.Role,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	); err != nil {
@@ -342,40 +352,4 @@ func (m *MariaDB) parseUser(row *sql.Rows) (*types.User, error) {
 	}
 
 	return user, nil
-}
-
-func (m *MariaDB) parseUserResponse(row *sql.Rows) (*types.UserResponse, error) {
-	user := &types.UserResponse{}
-	user_avatar := sql.NullString{}
-	if err := row.Scan(
-		&user.Name,
-		&user.Username,
-		&user.Avatar,
-		&user.BackgroundImg,
-		&user.Bio,
-		&user.CreatedAt,
-	); err != nil {
-		return nil, err
-	}
-	if user_avatar.Valid {
-		user.Avatar = user_avatar.String
-	}
-
-	return user, nil
-}
-
-func (m *MariaDB) parseAuth(row *sql.Rows) (*types.AuthEntry, error) {
-	auth := &types.AuthEntry{}
-	if err := row.Scan(
-		&auth.Id,
-		&auth.UserId,
-		&auth.Provider,
-		&auth.ProviderId,
-		&auth.CreatedAt,
-		&auth.UpdatedAt,
-	); err != nil {
-		return nil, err
-	}
-
-	return auth, nil
 }

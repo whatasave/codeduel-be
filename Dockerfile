@@ -22,11 +22,16 @@ FROM gcr.io/distroless/base-debian11 AS release-stage
 COPY --from=build-stage /usr/src/app/bin /usr/local/bin
 COPY --from=build-stage /etc/passwd /etc/passwd
 
-ENV ENV=production
+ENV ENV="production"
+ENV COOKIE_DOMAIN="*"
+ENV CORS_ORIGIN="*"
 ENV HOST=0.0.0.0
 ENV PORT=443
-ENV PORT=80
-ENV COOKIE_DOMAIN=*
+ENV PORT_HTTP=80
+ENV SSL_KEY="/ssl/server.pem"
+ENV SSL_CERT="/ssl/server.pem"
+
+# /etc/ssl/certs
 
 USER 1001
 

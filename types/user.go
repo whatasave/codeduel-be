@@ -10,12 +10,12 @@ type VerifyToken struct {
 }
 
 type UserRequestHeader struct {
-	Id       int    `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Avatar   string `json:"avatar"`
-	// Role   string `json:"role"`
-	ExpiresAt int64 `json:"expires_at"`
+	Id        int    `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	Avatar    string `json:"avatar"`
+	Role      string `json:"role"`
+	ExpiresAt int64  `json:"expires_at"`
 }
 
 type User struct {
@@ -26,6 +26,7 @@ type User struct {
 	Avatar        string `json:"avatar"`
 	BackgroundImg string `json:"background_img"`
 	Bio           string `json:"bio"`
+	Role          string `json:"role"`
 
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
@@ -66,5 +67,6 @@ type UserResponse struct {
 	Avatar        string `json:"avatar"`
 	BackgroundImg string `json:"background_img"`
 	Bio           string `json:"bio"`
+	Role          string `json:"role"`
 	CreatedAt     string `json:"created_at"`
 }

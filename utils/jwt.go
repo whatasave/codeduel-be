@@ -20,11 +20,11 @@ func ValidateUserJWT(tokenString string) (*types.UserRequestHeader, error) {
 	// https://auth0.com/docs/secure/tokens/json-web-tokens/json-web-token-claims#registered-claims
 	claims := token.Claims.(jwt.MapClaims)
 	userHeader := &types.UserRequestHeader{
-		Id:       int(claims["sub"].(float64)),
-		Username: claims["username"].(string),
-		Email:    claims["email"].(string),
-		Avatar:   claims["avatar"].(string),
-		// Role: claims["role"].(string),
+		Id:        int(claims["sub"].(float64)),
+		Username:  claims["username"].(string),
+		Email:     claims["email"].(string),
+		Avatar:    claims["avatar"].(string),
+		Role:      claims["role"].(string),
 		ExpiresAt: int64(claims["exp"].(float64)),
 	}
 
@@ -63,7 +63,7 @@ func CreateJWT(user *types.User) (*JWT, error) {
 		"username": user.Username,
 		"email":    user.Email,
 		"avatar":   user.Avatar,
-		// "role": user.Role,
+		"role":     user.Role,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

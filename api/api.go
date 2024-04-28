@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/db"
@@ -37,13 +38,10 @@ type Error struct {
 type Handler func(w http.ResponseWriter, r *http.Request) error
 
 func NewAPIServer(config *config.Config, db db.DB) *Server {
-	address := fmt.Sprintf("%s:%s", config.Host, config.Port)
-	log.Printf("%s Starting API server on http://%s", utils.GetLogTag("main"), address)
-	log.Printf("%s Docs http://%s/docs", utils.GetLogTag("main"), address)
 	return &Server{
 		config:  config,
 		db:      db,
-		address: address,
+		address: fmt.Sprintf("%s:%s", config.Host, config.Port),
 	}
 }
 
@@ -73,6 +71,7 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 // @schemes	http
 func (s *Server) Run() error {
 	v1 := http.NewServeMux()
+	v1.Handle("POST /validateToken", makeHTTPHandleFunc(s.handleValidateToken))
 	v1.Handle("/user", s.GetUserRouter())
 	v1.Handle("/user/", s.GetUserRouter())
 	v1.Handle("/lobby", s.GetLobbyRouter())
@@ -85,58 +84,100 @@ func (s *Server) Run() error {
 	main := http.NewServeMux()
 	main.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))
 	main.HandleFunc("/health", makeHTTPHandleFunc(s.handleHealth))
-	main.HandleFunc("POST /validateToken", makeHTTPHandleFunc(s.handleValidateToken)) // TODO: make it accessible only by lobby service
 	// main.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL("http://"+s.address+"/docs/doc.json")))
 	main.HandleFunc("/docs/", httpSwagger.Handler())
 	main.Handle("/v1/", http.StripPrefix("/v1", v1))
 
-	serverSSL := &http.Server{
-		Addr:      s.address,
-		Handler:   ChainMiddleware(CorsMiddleware, LoggingMiddleware)(main),
-		TLSConfig: &tls.Config{},
-	}
-
-	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%s", s.config.Host, s.config.PortHttp),
-		Handler: ChainMiddleware(CorsMiddleware, LoggingMiddleware)(main),
-	}
-
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	go func() {
-		log.Printf("%s HTTPS server starting...", utils.GetLogTag("info"))
-		err := serverSSL.ListenAndServeTLS(s.config.SSLCert, s.config.SSLKey)
+	// HTTPS server
+	go startHttpsServer(
+		s.config,
+		ChainMiddleware(CreateCorsMiddleware(s.config), LoggingMiddleware)(main),
+		&wg,
+	)
 
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("%s failed to start HTTPS server: %s", utils.GetLogTag("error"), err.Error())
-		} else if errors.Is(err, http.ErrServerClosed) {
-			log.Printf("%s HTTPS server closed", utils.GetLogTag("error"))
-		} else {
-			log.Printf("%s HTTPS server started", utils.GetLogTag("info"))
-		}
-
-		wg.Done()
-	}()
-
-	go func() {
-		log.Printf("%s HTTP server starting...", utils.GetLogTag("info"))
-		err := server.ListenAndServe()
-
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("%s failed to start HTTP server: %s", utils.GetLogTag("error"), err.Error())
-		} else if errors.Is(err, http.ErrServerClosed) {
-			log.Printf("%s HTTP server closed", utils.GetLogTag("error"))
-		} else {
-			log.Printf("%s HTTP server started", utils.GetLogTag("info"))
-		}
-
-		wg.Done()
-	}()
+	// HTTP server
+	go startHttpServer(
+		s.config,
+		ChainMiddleware(CreateCorsMiddleware(s.config), LoggingMiddleware)(main),
+		&wg,
+	)
 
 	wg.Wait()
 
 	return nil
+}
+
+func startHttpsServer(config *config.Config, handler http.Handler, wg *sync.WaitGroup) {
+	tlsCert, err := tls.LoadX509KeyPair(config.SSLCert, config.SSLKey)
+	if err != nil {
+		log.Printf("%s%s failed to load SSL certificate: %s", utils.GetLogTag("API"), utils.GetLogTag("error"), err.Error())
+	}
+
+	sslCertFile := utils.GetEnv("SSL_CERT_FILE", "/etc/ssl/certs")
+	log.Printf("%s SSL Cert file: %s", utils.GetLogTag("info"), sslCertFile)
+
+	// certManager := autocert.Manager{
+	// 	Prompt:     autocert.AcceptTOS,
+	// 	HostPolicy: autocert.HostWhitelist("api.codeduel.it"),
+	// 	Cache:      autocert.DirCache(sslCertFile),
+	// 	// Cache:      autocert.DirCache("/etc/ssl/certs"),
+	// }
+	httpsAddress := fmt.Sprintf("%s:%s", config.Host, config.Port)
+
+	server := &http.Server{
+		Addr: httpsAddress,
+
+		// setting timeouts to avoid Slowloris attack
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  120 * time.Second,
+
+		Handler: handler,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{tlsCert},
+			// GetCertificate: certManager.GetCertificate,
+			// MinVersion:     tls.VersionTLS12,
+		},
+	}
+
+	log.Printf("%s server started on %s", utils.GetLogTag("HTTPS"), httpsAddress)
+	err = server.ListenAndServeTLS("", "")
+
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("%s failed to start server: %s", utils.GetLogTag("HTTPS"), err.Error())
+	} else if errors.Is(err, http.ErrServerClosed) {
+		log.Printf("%s server closed", utils.GetLogTag("HTTPS"))
+	} else {
+		log.Printf("%s server started", utils.GetLogTag("HTTPS"))
+	}
+
+	wg.Done()
+}
+
+func startHttpServer(config *config.Config, handler http.Handler, wg *sync.WaitGroup) {
+	httpAddress := fmt.Sprintf("%s:%s", config.Host, config.PortHttp)
+
+	server := &http.Server{
+		Addr:    httpAddress,
+		Handler: handler,
+		// Handler: certManager.HTTPHandler(nil),
+	}
+
+	log.Printf("%s server started on %s", utils.GetLogTag("HTTP"), httpAddress)
+	err := server.ListenAndServe()
+
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("%s failed to start server: %s", utils.GetLogTag("HTTP"), err.Error())
+	} else if errors.Is(err, http.ErrServerClosed) {
+		log.Printf("%s server closed", utils.GetLogTag("HTTP"))
+	} else {
+		log.Printf("%s server started", utils.GetLogTag("HTTP"))
+	}
+
+	wg.Done()
 }
 
 // @Summary		Root

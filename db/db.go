@@ -45,6 +45,9 @@ type MariaDB struct {
 
 func NewDB(host, port, user, pass, name string) (*MariaDB, error) {
 	dsn := user + ":" + pass + "@tcp(" + host + ":" + port + ")/" + name
+
+	log.Printf("%s%s Connecting to: %s", utils.GetLogTag("db"), utils.GetLogTag("warn"), dsn)
+
 	pool, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err

@@ -50,12 +50,19 @@ func ChainMiddleware(middlewares ...Middleware) Middleware {
 	}
 }
 
-func CorsMiddleware(next http.Handler) http.Handler {
+func CreateCorsMiddleware(config *config.Config) Middleware {
+	return func(next http.Handler) http.Handler {
+		return CorsMiddleware(next, config)
+	}
+}
+
+func CorsMiddleware(next http.Handler, config *config.Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Access-Control-Allow-Origin", "*")
-		w.Header().Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Add("Access-Control-Allow-Headers", "Content-Type, x-jwt-token")
-		w.Header().Add("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Origin", config.CorsOrigin)
+		w.Header().Set("Access-Control-Allow-Methods", config.CorsMethods)
+		w.Header().Set("Access-Control-Allow-Headers", config.CorsHeaders)
+		w.Header().Set("Access-Control-Allow-Credentials", fmt.Sprintf("%t", config.CorsCredentials))
+		w.Header().Set("Access-Control-Expose-Headers", "Authorization")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -76,8 +83,8 @@ type contextKey string
 
 const AuthUser contextKey = "middleware.auth.user"
 
-func AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 
 		tokenString := r.Header.Get("x-jwt-token")
 		if tokenString == "" {
@@ -100,12 +107,8 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), AuthUser, userHeader)
 		r = r.WithContext(ctx)
 
-		r.Header.Set("x-user-id", fmt.Sprintf("%d", userHeader.Id))
-		r.Header.Set("x-user-username", userHeader.Username)
-		r.Header.Set("x-user-email", userHeader.Email)
-
 		next.ServeHTTP(w, r)
-	})
+	}
 }
 
 func GetAuthUser(r *http.Request) *types.UserRequestHeader {
