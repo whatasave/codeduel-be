@@ -95,8 +95,30 @@ func (s *Server) Run() error {
 	main := http.NewServeMux()
 	main.HandleFunc("/v1", convertToHandleFunc(s.handleRoot))
 	main.HandleFunc("/health", convertToHandleFunc(s.handleHealth))
+	// main.HandleFunc("GET /admin", convertToHandleFunc(func(w http.ResponseWriter, r *http.Request) error {
+	// 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{
+	// 		"iss":      "codeduel",
+	// 		"sub":      999,
+	// 		"exp":      time.Now().Add(time.Hour * 99999).Unix(),
+	// 		"username": "admin",
+	// 		"email":    "admin@codeduel.it",
+	// 		"avatar":   "",
+	// 		"role":     "admin",
+	// 	}).SignedString([]byte("yoooSuperSecret"))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	return WriteJSON(w, http.StatusOK, tokenString)
+	// }))
 	// main.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL("http://"+s.address+"/docs/doc.json")))
-	main.HandleFunc("/docs/", httpSwagger.Handler())
+	main.HandleFunc("/docs/", httpSwagger.Handler(
+	// httpSwagger.UIConfig(map[string]string{
+	// 	"showExtensions":        "true",
+	// 	"onComplete":            `() => { window.ui.setBasePath('v3'); }`,
+	// 	"defaultModelRendering": `"model"`,
+	// }),
+	))
 	main.Handle("/v1/", http.StripPrefix("/v1", v1))
 
 	var wg sync.WaitGroup
