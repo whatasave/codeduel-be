@@ -10,10 +10,10 @@ import (
 
 func (s *Server) GetLobbyRouter() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("POST /lobby", makeHTTPHandleFunc(s.handleCreateLobby))
+	router.HandleFunc("POST /lobby", convertToHandleFunc(s.handleCreateLobby))
 	// router.HandleFunc("PATCH /lobby/{id}", makeHTTPHandleFunc(s.handleGetLobbyByID))
-	router.HandleFunc("POST /lobby/{lobbyUniqueId}/submission", makeHTTPHandleFunc(s.handleLobbyUserSubmission))
-	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/endgame", makeHTTPHandleFunc(s.handleLobbyEnd))
+	router.HandleFunc("POST /lobby/{lobbyUniqueId}/submission", convertToHandleFunc(s.handleLobbyUserSubmission))
+	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/endgame", convertToHandleFunc(s.handleLobbyEnd))
 	return router
 }
 

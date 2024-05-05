@@ -11,11 +11,11 @@ import (
 
 func (s *Server) GetChallengeRouter() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /challenge", makeHTTPHandleFunc(s.handleGetChallenges))
-	router.HandleFunc("POST /challenge", AuthMiddleware(makeHTTPHandleFunc(s.handleCreateChallenge)))
-	router.HandleFunc("GET /challenge/{id}", makeHTTPHandleFunc(s.handleGetChallengeByID))
-	router.HandleFunc("PUT /challenge/{id}", AuthMiddleware(makeHTTPHandleFunc(s.handleUpdateChallenge)))
-	router.HandleFunc("DELETE /challenge/{id}", AuthMiddleware(makeHTTPHandleFunc(s.handleDeleteChallenge)))
+	router.HandleFunc("GET /challenge", convertToHandleFunc(s.handleGetChallenges))
+	router.HandleFunc("POST /challenge", convertToHandleFunc(s.handleCreateChallenge, AuthMiddleware))
+	router.HandleFunc("GET /challenge/{id}", convertToHandleFunc(s.handleGetChallengeByID))
+	router.HandleFunc("PUT /challenge/{id}", convertToHandleFunc(s.handleUpdateChallenge, AuthMiddleware))
+	router.HandleFunc("DELETE /challenge/{id}", convertToHandleFunc(s.handleDeleteChallenge, AuthMiddleware))
 	return router
 }
 

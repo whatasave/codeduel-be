@@ -37,6 +37,17 @@ type Error struct {
 
 type Handler func(w http.ResponseWriter, r *http.Request) error
 
+func (handler Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := handler(w, r); err != nil {
+		// http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("%s %s", utils.GetLogTag("error"), err.Error())
+		err := WriteJSON(w, http.StatusInternalServerError, Error{Err: err.Error()})
+		if err != nil {
+			log.Printf("%s %s", utils.GetLogTag("error"), err.Error())
+		}
+	}
+}
+
 func NewAPIServer(config *config.Config, db db.DB) *Server {
 	return &Server{
 		config:  config,
@@ -71,7 +82,7 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 // @schemes	http
 func (s *Server) Run() error {
 	v1 := http.NewServeMux()
-	v1.Handle("POST /validateToken", makeHTTPHandleFunc(s.handleValidateToken))
+	v1.Handle("POST /validateToken", convertToHandleFunc(s.handleValidateToken))
 	v1.Handle("/user", s.GetUserRouter())
 	v1.Handle("/user/", s.GetUserRouter())
 	v1.Handle("/lobby", s.GetLobbyRouter())
@@ -82,8 +93,8 @@ func (s *Server) Run() error {
 	v1.Handle("/auth/github/", s.GetGithubAuthRouter())
 
 	main := http.NewServeMux()
-	main.HandleFunc("/v1", makeHTTPHandleFunc(s.handleRoot))
-	main.HandleFunc("/health", makeHTTPHandleFunc(s.handleHealth))
+	main.HandleFunc("/v1", convertToHandleFunc(s.handleRoot))
+	main.HandleFunc("/health", convertToHandleFunc(s.handleHealth))
 	// main.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL("http://"+s.address+"/docs/doc.json")))
 	main.HandleFunc("/docs/", httpSwagger.Handler())
 	main.Handle("/v1/", http.StripPrefix("/v1", v1))
@@ -239,7 +250,7 @@ func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) err
 	return WriteJSON(w, http.StatusOK, decodedUserData)
 }
 
-func makeHTTPHandleFunc(fn Handler) http.HandlerFunc {
+func oldMakeHTTPHandleFunc(fn Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := fn(w, r); err != nil {
 			// http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -250,4 +261,24 @@ func makeHTTPHandleFunc(fn Handler) http.HandlerFunc {
 			}
 		}
 	}
+}
+
+func convertToHandleFunc(handler Handler, middlewares ...Middleware2) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		var req *http.Request = r
+		for _, middleware := range middlewares {
+			req = middleware(w, req)
+		}
+
+		if err := handler(w, req); err != nil {
+			// http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("%s %s", utils.GetLogTag("error"), err.Error())
+			err := WriteJSON(w, http.StatusInternalServerError, Error{Err: err.Error()})
+			if err != nil {
+				log.Printf("%s %s", utils.GetLogTag("error"), err.Error())
+			}
+		}
+	}
+
 }

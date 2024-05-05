@@ -10,11 +10,11 @@ import (
 
 func (s *Server) GetUserRouter() http.Handler {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /user", makeHTTPHandleFunc(s.handleGetUsers))
-	router.HandleFunc("POST /user", AuthMiddleware(makeHTTPHandleFunc(s.handleCreateUser)))
-	router.HandleFunc("GET /user/{username}", makeHTTPHandleFunc(s.handleGetUserByUsername))
-	router.HandleFunc("DELETE /user/{username}", AuthMiddleware(makeHTTPHandleFunc(s.handleDeleteUserByUsername)))
-	router.HandleFunc("GET /user/profile", AuthMiddleware(makeHTTPHandleFunc(s.handleProfile)))
+	router.HandleFunc("GET /user", convertToHandleFunc(s.handleGetUsers))
+	router.HandleFunc("POST /user", convertToHandleFunc(s.handleCreateUser, AuthMiddleware))
+	router.HandleFunc("GET /user/{username}", convertToHandleFunc(s.handleGetUserByUsername))
+	router.HandleFunc("DELETE /user/{username}", convertToHandleFunc(s.handleDeleteUserByUsername, AuthMiddleware))
+	router.HandleFunc("GET /user/profile", convertToHandleFunc(s.handleProfile, AuthMiddleware))
 
 	return router
 }
@@ -100,7 +100,7 @@ func (s *Server) handleDeleteUserByUsername(_ http.ResponseWriter, r *http.Reque
 // @Description	Get user profile when authenticated with JWT in the cookie
 // @Tags			user
 // @Produce		json
-// @Success		200	{object}	types.ProfileResponse
+// @Success		200	{object}	types.UserRequestHeader
 // @Failure		500	{object}	Error
 // @Security		CookieAuth
 // @Router			/v1/user/profile [get]

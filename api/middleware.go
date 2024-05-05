@@ -83,34 +83,40 @@ type contextKey string
 
 const AuthUser contextKey = "middleware.auth.user"
 
-func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+type Middleware2 func(w http.ResponseWriter, r *http.Request) *http.Request
 
-		tokenString := r.Header.Get("x-jwt-token")
-		if tokenString == "" {
-			// get from cookie
-			cookie, err := r.Cookie("jwt")
-			if err != nil {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
-				_ = WriteJSON(w, http.StatusUnauthorized, Error{Err: err.Error()})
-				return
-			}
-			tokenString = cookie.Value
-		}
-
-		userHeader, err := utils.ValidateUserJWT(tokenString)
+func AuthMiddleware(w http.ResponseWriter, r *http.Request) *http.Request {
+	tokenString := r.Header.Get("x-token")
+	if tokenString == "" {
+		cookie, err := r.Cookie("jwt")
 		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			_ = WriteJSON(w, http.StatusUnauthorized, Error{Err: err.Error()})
-			return
+			return r
 		}
-
-		ctx := context.WithValue(r.Context(), AuthUser, userHeader)
-		r = r.WithContext(ctx)
-
-		next.ServeHTTP(w, r)
+		tokenString = cookie.Value
 	}
+
+	log.Printf("tokenString: %s", tokenString)
+
+	userHeader, err := utils.ValidateUserJWT(tokenString)
+	if err != nil {
+		_ = WriteJSON(w, http.StatusUnauthorized, Error{Err: err.Error()})
+		return r
+	}
+
+	ctx := context.WithValue(r.Context(), AuthUser, userHeader)
+	r = r.WithContext(ctx)
+
+	return r
 }
 
 func GetAuthUser(r *http.Request) *types.UserRequestHeader {
-	return r.Context().Value(AuthUser).(*types.UserRequestHeader)
+	user := r.Context().Value(AuthUser)
+	if user == nil {
+		log.Printf("User is nil")
+		return nil
+	}
+
+	return user.(*types.UserRequestHeader)
 }

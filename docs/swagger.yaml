@@ -78,31 +78,6 @@ definitions:
       user_id:
         type: integer
     type: object
-  types.ProfileResponse:
-    properties:
-      avatar:
-        type: string
-      background_img:
-        type: string
-      bio:
-        type: string
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      stats:
-        items:
-          $ref: '#/definitions/types.UserStatsParsed'
-        type: array
-      updated_at:
-        type: string
-      username:
-        type: string
-    type: object
   types.UpdateChallengeRequest:
     properties:
       content:
@@ -130,7 +105,24 @@ definitions:
         type: integer
       name:
         type: string
+      role:
+        type: string
       updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+  types.UserRequestHeader:
+    properties:
+      avatar:
+        type: string
+      email:
+        type: string
+      expires_at:
+        type: integer
+      id:
+        type: integer
+      role:
         type: string
       username:
         type: string
@@ -147,20 +139,9 @@ definitions:
         type: string
       name:
         type: string
+      role:
+        type: string
       username:
-        type: string
-    type: object
-  types.UserStatsParsed:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      stat:
-        type: string
-      updated_at:
         type: string
     type: object
   types.VerifyToken:
@@ -506,7 +487,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.ProfileResponse'
+            $ref: '#/definitions/types.UserRequestHeader'
         "500":
           description: Internal Server Error
           schema:
