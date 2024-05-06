@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/xedom/codeduel/types"
 )
@@ -27,9 +28,32 @@ func (s *Server) GetUserRouter() http.Handler {
 // @Failure		500	{object}	Error
 // @Router			/v1/user [get]
 func (s *Server) handleGetUsers(w http.ResponseWriter, r *http.Request) error {
-	users, err := s.db.GetUsers()
-	if err != nil {
-		return err
+	users := []*types.UserResponse{}
+
+	if r.URL.Query().Get("id") != "" {
+		id, err := strconv.Atoi(r.URL.Query().Get("id"))
+		if err != nil {
+			return err
+		}
+		user, err := s.db.GetUserByID(id)
+		if err != nil {
+			return err
+		}
+		users = append(users, &types.UserResponse{
+			Name:          user.Name,
+			Username:      user.Username,
+			Avatar:        user.Avatar,
+			BackgroundImg: user.BackgroundImg,
+			Bio:           user.Bio,
+			Role:          user.Role,
+			CreatedAt:     user.CreatedAt,
+		})
+	} else {
+		dbUsers, err := s.db.GetUsers()
+		if err != nil {
+			return err
+		}
+		users = dbUsers
 	}
 
 	return WriteJSON(w, http.StatusOK, users)

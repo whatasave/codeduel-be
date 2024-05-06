@@ -17,7 +17,7 @@ func (s *Server) GetGithubAuthRouter() http.Handler {
 
 // @Summary		Login with GitHub
 // @Description	Endpoint to log in with GitHub OAuth, it will redirect to GitHub OAuth page to authenticate
-// @Tags			auth
+// @Tags		auth
 // @Success		302
 // @Router			/v1/github/auth [get]
 func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error {
