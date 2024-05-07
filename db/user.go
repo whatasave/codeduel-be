@@ -7,24 +7,6 @@ import (
 	"github.com/xedom/codeduel/types"
 )
 
-func (m *MariaDB) CreateUser(user *types.User) error {
-	query := `INSERT INTO user (username, email, avatar)
-		VALUES (?, ?, ?);
-	;`
-	_, err := m.db.Exec(query, user.Username, user.Email, user.Avatar)
-	if err != nil {
-		return err
-	}
-
-	id, err := m.getLastInsertID()
-	if err != nil {
-		return err
-	}
-
-	user.Id = id
-	return err
-}
-
 func (m *MariaDB) getLastInsertID() (int, error) {
 	row, err := m.db.Query(`SELECT LAST_INSERT_ID();`)
 	if err != nil {
@@ -41,7 +23,11 @@ func (m *MariaDB) getLastInsertID() (int, error) {
 		return 0, err
 	}
 
-	return id, row.Close()
+	if err := row.Close(); err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }
 
 func (m *MariaDB) CreateAuth(auth *types.AuthEntry) error {
@@ -86,47 +72,6 @@ func (m *MariaDB) GetAuthByProviderAndID(provider, providerID string) (*types.Au
 	return nil, fmt.Errorf("DB(GetAuthByProviderAndID): auth with provider %s and provider_id %s not found", provider, providerID)
 }
 
-func (m *MariaDB) DeleteUser(id int) error {
-	query := `DELETE FROM user WHERE id = ?;`
-	res, err := m.db.Exec(query, id)
-
-	if err != nil {
-		return err
-	}
-	if rows, _ := res.RowsAffected(); rows == 0 {
-		return fmt.Errorf("user with id %d not found", id)
-	}
-
-	return err
-}
-
-func (m *MariaDB) DeleteUserByUsername(username string) error {
-	query := `DELETE FROM user WHERE username = ?;`
-	res, err := m.db.Exec(query, username)
-
-	if err != nil {
-		return err
-	}
-	if rows, _ := res.RowsAffected(); rows == 0 {
-		return fmt.Errorf("DB(DeleteUserByUsername): user with id %s not found", username)
-	}
-
-	return err
-}
-
-func (m *MariaDB) UpdateUser(user *types.User) error {
-	query := `UPDATE user SET username = ?, email = ?, avatar = ? WHERE id = ?;`
-	res, err := m.db.Exec(query, user.Username, user.Email, user.Avatar, user.Id)
-	if err != nil {
-		return err
-	}
-	if rows, _ := res.RowsAffected(); rows == 0 {
-		return fmt.Errorf("user with id %d not found", user.Id)
-	}
-
-	return err
-}
-
 func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
 	query := `SELECT user.name, username, avatar, background_img, bio, role, created_at FROM user;`
 	rows, err := m.db.Query(query)
@@ -150,7 +95,11 @@ func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
 		return nil, err
 	}
 
-	return users, rows.Close()
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
@@ -159,17 +108,17 @@ func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("DB(GetUserByID): %s", err.Error())
 	}
-	defer func(rows *sql.Rows) {
-		if err := rows.Close(); err != nil {
-			fmt.Println("DB(GetUserByID):", err)
-		}
-	}(rows)
 
 	for rows.Next() {
 		return m.parseUser(rows)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("DB(GetUserByID): %s", err.Error())
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 
 	return nil, fmt.Errorf("DB(GetUserByID): user with id %d not found", id)
@@ -181,17 +130,17 @@ func (m *MariaDB) GetUserByUsername(username string) (*types.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("DB(GetUserByUsername): %s", err.Error())
 	}
-	defer func(rows *sql.Rows) {
-		if err := rows.Close(); err != nil {
-			fmt.Println("DB(GetUserByUsername):", err)
-		}
-	}(rows)
 
 	for rows.Next() {
 		return m.parseUser(rows)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("DB(GetUserByUsername): %s", err.Error())
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
 	}
 
 	return nil, fmt.Errorf("DB(GetUserByUsername): user with username %s not found", username)
@@ -228,31 +177,96 @@ func (m *MariaDB) GetUserStats(id int) ([]*types.UserStatsParsed, error) {
 		}
 		stats = append(stats, stat)
 	}
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("DB(GetUserStats:2): %s", err.Error())
 	}
 
-	return stats, rows.Close()
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return stats, nil
 }
 
+func (m *MariaDB) CreateUser(user *types.User) error {
+	query := `INSERT INTO user (username, email, avatar)
+		VALUES (?, ?, ?);
+	;`
+	_, err := m.db.Exec(query, user.Username, user.Email, user.Avatar)
+	if err != nil {
+		return err
+	}
+
+	id, err := m.getLastInsertID()
+	if err != nil {
+		return err
+	}
+
+	user.Id = id
+	return err
+}
+
+func (m *MariaDB) UpdateUser(user *types.User) error {
+	query := `UPDATE user SET username = ?, email = ?, avatar = ? WHERE id = ?;`
+	res, err := m.db.Exec(query, user.Username, user.Email, user.Avatar, user.Id)
+	if err != nil {
+		return err
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return fmt.Errorf("user with id %d not found", user.Id)
+	}
+
+	return err
+}
+
+func (m *MariaDB) DeleteUser(id int) error {
+	query := `DELETE FROM user WHERE id = ?;`
+	res, err := m.db.Exec(query, id)
+
+	if err != nil {
+		return err
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return fmt.Errorf("user with id %d not found", id)
+	}
+
+	return err
+}
+
+func (m *MariaDB) DeleteUserByUsername(username string) error {
+	query := `DELETE FROM user WHERE username = ?;`
+	res, err := m.db.Exec(query, username)
+
+	if err != nil {
+		return err
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return fmt.Errorf("DB(DeleteUserByUsername): user with id %s not found", username)
+	}
+
+	return err
+}
+
+// -- Init Tables --
 func (m *MariaDB) InitUserTables() error {
-	if err := m.createUserTable(); err != nil {
+	if err := m.createTableUser(); err != nil {
 		return err
 	}
-	if err := m.createAuthTable(); err != nil {
+	if err := m.createTableAuth(); err != nil {
 		return err
 	}
-	if err := m.createStatsTable(); err != nil {
+	if err := m.createTableStats(); err != nil {
 		return err
 	}
-	if err := m.createUserStatsTable(); err != nil {
+	if err := m.createTableUserStats(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (m *MariaDB) createUserTable() error {
+func (m *MariaDB) createTableUser() error {
 	query := `CREATE TABLE IF NOT EXISTS user (
 		id INT unique AUTO_INCREMENT,
 		username VARCHAR(50) NOT NULL,
@@ -271,7 +285,7 @@ func (m *MariaDB) createUserTable() error {
 	return err
 }
 
-func (m *MariaDB) createAuthTable() error {
+func (m *MariaDB) createTableAuth() error {
 	query := `CREATE TABLE IF NOT EXISTS auth (
 		id INT AUTO_INCREMENT,
 		user_id INT NOT NULL,
@@ -287,7 +301,7 @@ func (m *MariaDB) createAuthTable() error {
 	return err
 }
 
-func (m *MariaDB) createUserStatsTable() error {
+func (m *MariaDB) createTableUserStats() error {
 	query := `CREATE TABLE IF NOT EXISTS user_stats (
 		id INT AUTO_INCREMENT,
 		user_id INT NOT NULL,
@@ -303,7 +317,7 @@ func (m *MariaDB) createUserStatsTable() error {
 	return err
 }
 
-func (m *MariaDB) createStatsTable() error {
+func (m *MariaDB) createTableStats() error {
 	query := `CREATE TABLE IF NOT EXISTS stats (
 		id INT AUTO_INCREMENT,
 		name VARCHAR(50) NOT NULL,
@@ -330,6 +344,7 @@ func (m *MariaDB) createStatsTable() error {
 	return nil
 }
 
+// -- Utils --
 func (m *MariaDB) parseUser(row *sql.Rows) (*types.User, error) {
 	user := &types.User{}
 	user_avatar := sql.NullString{}

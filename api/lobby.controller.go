@@ -12,9 +12,23 @@ func (s *Server) GetLobbyRouter() http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("POST /lobby", convertToHandleFunc(s.handleCreateLobby))
 	// router.HandleFunc("PATCH /lobby/{id}", makeHTTPHandleFunc(s.handleGetLobbyByID))
-	router.HandleFunc("POST /lobby/{lobbyUniqueId}/submission", convertToHandleFunc(s.handleLobbyUserSubmission))
+	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/submission", convertToHandleFunc(s.handleLobbyUserSubmission))
 	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/endgame", convertToHandleFunc(s.handleLobbyEnd))
+	router.HandleFunc("GET /lobby/results/{lobbyUniqueId}", convertToHandleFunc(s.handleGetResults))
+
 	return router
+}
+
+func (s *Server) handleGetResults(w http.ResponseWriter, r *http.Request) error {
+	lobbyUniqueId := r.PathValue("lobbyUniqueId")
+	log.Print("[API] Getting results for lobby ", lobbyUniqueId)
+
+	results, err := s.db.GetLobbyResults(lobbyUniqueId)
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, results)
 }
 
 // @Summary		Create a new lobby
@@ -65,7 +79,7 @@ func (s *Server) handleLobbyUserSubmission(w http.ResponseWriter, r *http.Reques
 	if err := json.NewDecoder(r.Body).Decode(lobbySubmissionPayload); err != nil {
 		return err
 	}
-	log.Print("[API] Lobby user submission ", lobbyUniqueId, lobbySubmissionPayload)
+	log.Print("[API] Lobby user submission ", lobbyUniqueId, " - ", lobbySubmissionPayload)
 
 	lobby, err := s.db.GetLobbyByUniqueId(lobbyUniqueId)
 	if err != nil {

@@ -43,6 +43,9 @@ func main() {
 	if err := mariaDB.InitLobbyTables(); err != nil {
 		log.Printf("%s%s Error initializing DB lobby tables: %v", utils.GetLogTag("DB"), utils.GetLogTag("error"), err.Error())
 	}
+	if err := mariaDB.InitChallengeTables(); err != nil {
+		log.Printf("%s%s Error initializing DB lobby tables: %v", utils.GetLogTag("DB"), utils.GetLogTag("error"), err.Error())
+	}
 
 	server := api.NewAPIServer(loadConfig, mariaDB)
 	err = server.Run()

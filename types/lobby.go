@@ -39,6 +39,11 @@ type Lobby struct {
 	UpdatedAt string `json:"updated_at"`
 }
 
+type LobbyResults struct {
+	Lobby   Lobby             `json:"lobby"`
+	Results []LobbyUserResult `json:"results"`
+}
+
 type LobbyUser struct {
 	Id      int `json:"id"`
 	LobbyId int `json:"lobby_id"`
@@ -48,6 +53,20 @@ type LobbyUser struct {
 	Language       string    `json:"language"`
 	TestsPassed    int       `json:"tests_passed"`
 	SubmissionDate time.Time `json:"submission_date"`
+
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type LobbyUserResult struct {
+	Id      int `json:"id"`
+	LobbyId int `json:"lobby_id"`
+	UserId  int `json:"user_id"`
+
+	Code           string `json:"code"`
+	Language       string `json:"language"`
+	TestsPassed    int    `json:"tests_passed"`
+	SubmissionDate string `json:"submission_date"`
 
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`

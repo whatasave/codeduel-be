@@ -164,9 +164,10 @@ func startHttpsServer(config *config.Config, handler http.Handler, wg *sync.Wait
 		Addr: httpsAddress,
 
 		// setting timeouts to avoid Slowloris attack
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
 
 		Handler: handler,
 		TLSConfig: &tls.Config{

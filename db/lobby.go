@@ -1,6 +1,8 @@
 package db
 
 import (
+	"strings"
+
 	"github.com/xedom/codeduel/types"
 )
 
@@ -95,6 +97,10 @@ func (m *MariaDB) GetLobbyByUniqueId(uniqueId string) (*types.Lobby, error) {
 		lobby.AllowedLanguages = append(lobby.AllowedLanguages, string(lang))
 	}
 
+	if err := row.Err(); err != nil {
+		return nil, err
+	}
+
 	return lobby, nil
 }
 
@@ -108,25 +114,93 @@ func (m *MariaDB) EndLobby(lobbyUniqueId string) error {
 	return nil
 }
 
+func (m *MariaDB) GetLobbyResults(lobbyUniqueId string) (*types.LobbyResults, error) {
+	query := `SELECT l.id, l.uuid, l.challenge_id, l.owner_id, l.status, l.max_players, l.game_duration, l.allowed_languages, l.created_at, l.updated_at,
+		u.id, u.lobby_id, u.user_id, u.code, u.language, u.tests_passed, u.submission_date, u.created_at, u.updated_at
+		FROM lobby l
+		JOIN lobby_user u ON l.id = u.lobby_id
+		WHERE l.uuid = ?;`
+
+	rows, err := m.db.Query(query, lobbyUniqueId)
+	if err != nil {
+		return nil, err
+	}
+
+	lobby := &types.Lobby{}
+	results := []types.LobbyUserResult{}
+	for rows.Next() {
+		allowLanguages := ""
+		user := types.LobbyUserResult{}
+		err := rows.Scan(
+			&lobby.Id,
+			&lobby.UniqueId,
+			&lobby.ChallengeId,
+			&lobby.OwnerId,
+			&lobby.Status,
+			&lobby.MaxPlayers,
+			&lobby.GameDuration,
+			&allowLanguages,
+			&lobby.CreatedAt,
+			&lobby.UpdatedAt,
+
+			&user.Id,
+			&user.LobbyId,
+			&user.UserId,
+			&user.Code,
+			&user.Language,
+			&user.TestsPassed,
+			&user.SubmissionDate,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		lobby.AllowedLanguages = []string{}
+		langSplided := strings.Split(allowLanguages, ",")
+		for _, lang := range langSplided {
+			lobby.AllowedLanguages = append(lobby.AllowedLanguages, string(lang))
+		}
+
+		results = append(results, user)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return &types.LobbyResults{
+		Lobby:   *lobby,
+		Results: results,
+	}, nil
+}
+
+// -- Init Tables --
 func (m *MariaDB) InitLobbyTables() error {
-	if err := m.createLobbyTable(); err != nil {
+	if err := m.createTableLobby(); err != nil {
 		return err
 	}
-	if err := m.createLobbyUserTable(); err != nil {
+	if err := m.createTableLobbyUser(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (m *MariaDB) createLobbyTable() error {
+func (m *MariaDB) createTableLobby() error {
 	query := `CREATE TABLE IF NOT EXISTS lobby (
 		id INT AUTO_INCREMENT,
 		uuid VARCHAR(255) NOT NULL,
 		challenge_id INT NOT NULL,
 		owner_id INT NOT NULL,
 		status VARCHAR(50) DEFAULT 'open',
-
+		
+		mode_id INT NOT NULL,
 		max_players INT NOT NULL,
 		game_duration INT NOT NULL,
 		allowed_languages VARCHAR(255) NOT NULL,
@@ -135,9 +209,9 @@ func (m *MariaDB) createLobbyTable() error {
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
 		PRIMARY KEY (id),
-		UNIQUE INDEX (id),
 		FOREIGN KEY (challenge_id) REFERENCES challenge(id),
 		FOREIGN KEY (owner_id) REFERENCES user(id),
+		UNIQUE INDEX (id),
 		UNIQUE INDEX (uuid)
 	);`
 	_, err := m.db.Exec(query)
@@ -148,7 +222,7 @@ func (m *MariaDB) createLobbyTable() error {
 	return nil
 }
 
-func (m *MariaDB) createLobbyUserTable() error {
+func (m *MariaDB) createTableLobbyUser() error {
 	query := `CREATE TABLE IF NOT EXISTS lobby_user (
 		id INT AUTO_INCREMENT,
 		lobby_id INT NOT NULL,

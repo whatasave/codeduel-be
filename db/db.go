@@ -29,11 +29,13 @@ type DB interface {
 	CreateChallenge(*types.Challenge) error
 	UpdateChallenge(*types.Challenge) error
 	DeleteChallenge(int) error
+	GetChallengesByOwnerID(int) (*[]types.Challenge, error)
 
 	CreateLobby(*types.Lobby) error
 	CreateLobbyUserSubmission(*types.LobbyUser) error
 	GetLobbyByUniqueId(string) (*types.Lobby, error)
 	EndLobby(string) error
+	GetLobbyResults(string) (*types.LobbyResults, error)
 
 	GetAuthByProviderAndID(string, string) (*types.AuthEntry, error)
 	CreateAuth(*types.AuthEntry) error
@@ -53,9 +55,9 @@ func NewDB(host, port, user, pass, name string) (*MariaDB, error) {
 		return nil, err
 	}
 
-	pool.SetConnMaxLifetime(0)
-	pool.SetMaxIdleConns(5)
-	pool.SetMaxOpenConns(5)
+	// pool.SetConnMaxLifetime(0)
+	// pool.SetMaxIdleConns(15)
+	// pool.SetMaxOpenConns(15)
 
 	if err := pool.Ping(); err != nil {
 		return nil, err
