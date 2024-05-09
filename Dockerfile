@@ -31,8 +31,6 @@ ENV PORT_HTTP=80
 ENV SSL_KEY="/ssl/server.pem"
 ENV SSL_CERT="/ssl/server.pem"
 
-# /etc/ssl/certs
-
 USER 1001
 
 EXPOSE 443
