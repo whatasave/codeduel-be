@@ -68,7 +68,7 @@ func CorsMiddleware(next http.Handler, config *utils.Config) http.Handler {
 
 func OnlyInternalServiceMiddleware(config *utils.Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("x-service-token")
+		token := r.Header.Get("x-token")
 		if token != config.ServiceToken {
 			_ = WriteJSON(w, http.StatusUnauthorized, Error{Err: "Unauthorized"})
 			return
@@ -87,7 +87,7 @@ type Middleware2 func(w http.ResponseWriter, r *http.Request) *http.Request
 func AuthMiddleware(w http.ResponseWriter, r *http.Request) *http.Request {
 	tokenString := r.Header.Get("x-token")
 	if tokenString == "" {
-		cookie, err := r.Cookie("jwt")
+		cookie, err := r.Cookie("access_token")
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			_ = WriteJSON(w, http.StatusUnauthorized, Error{Err: err.Error()})
@@ -111,7 +111,6 @@ func AuthMiddleware(w http.ResponseWriter, r *http.Request) *http.Request {
 func GetAuthUser(r *http.Request) *types.UserRequestHeader {
 	user := r.Context().Value(AuthUser)
 	if user == nil {
-		log.Printf("User is nil")
 		return nil
 	}
 

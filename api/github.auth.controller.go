@@ -141,7 +141,8 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 	})
 
 	// redirect to frontend
-	redirectUrl := fmt.Sprintf("%s?jwt=%s", s.config.FrontendURL, refreshToken.Jwt)
+	// redirectUrl := fmt.Sprintf("%s?jwt=%s", s.config.FrontendURL, refreshToken.Jwt)
+	redirectUrl := s.config.FrontendURL
 	if returnTo != "" {
 		redirectUrl += fmt.Sprintf("&return_to=%s", returnTo)
 	}

@@ -20,7 +20,7 @@ import (
 
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Add("Content-Type", "application/json")
-	w.WriteHeader(status)
+	// w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(v)
 }
 
@@ -267,11 +267,13 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// delete cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:   "refresh_token",
-		Value:  "",
-		MaxAge: -1,
-	})
+	// http.SetCookie(w, &http.Cookie{
+	// 	Name:   "refresh_token",
+	// 	Value:  "",
+	// 	MaxAge: -1,
+	// })
+	r.Header.Add("Set-Cookie", "refresh_token=; Path=/; HttpOnly; Max-Age=-1")
+	r.Header.Add("Set-Cookie", "access_token=; Path=/; HttpOnly; Max-Age=-1")
 
 	// redirect to login
 	redirectUrl := s.config.FrontendURL
@@ -309,6 +311,17 @@ func (s *Server) handleAccessToken(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken.Jwt,
+		Domain:   s.config.CookieDomain,
+		Path:     s.config.CookiePath,
+		Expires:  time.Unix(accessToken.ExpiresAt, 0),
+		HttpOnly: s.config.CookieHTTPOnly,
+		Secure:   s.config.CookieSecure,
+		SameSite: http.SameSiteLaxMode,
+	})
 
 	return WriteJSON(w, http.StatusOK, map[string]string{"access_token": accessToken.Jwt})
 }
