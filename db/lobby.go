@@ -7,8 +7,8 @@ import (
 )
 
 func (m *MariaDB) CreateLobby(lobby *types.Lobby) error {
-	query := `INSERT INTO lobby (uuid, challenge_id, owner_id, max_players, game_duration, allowed_languages)
-		VALUES (?, ?, ?, ?, ?, ?);
+	query := `INSERT INTO lobby (uuid, challenge_id, owner_id, mode, max_players, game_duration, allowed_languages)
+		VALUES (?, ?, ?, ?, ?, ?, ?);
 	;`
 
 	allowedLanguages := ""
@@ -19,58 +19,65 @@ func (m *MariaDB) CreateLobby(lobby *types.Lobby) error {
 		allowedLanguages += lang
 	}
 
-	_, err := m.db.Exec(
+	res, err := m.db.Exec(
 		query,
 		lobby.UniqueId,
 		lobby.ChallengeId,
 		lobby.OwnerId,
+		lobby.Mode,
 		lobby.MaxPlayers,
 		lobby.GameDuration,
 		allowedLanguages,
 	)
-
 	if err != nil {
 		return err
 	}
 
-	id, err := m.getLastInsertID()
+	id, err := res.LastInsertId()
 	if err != nil {
 		return err
 	}
 
-	lobby.Id = id
+	lobby.Id = int(id)
+
+	for _, userId := range lobby.UsersId {
+		if err := m.CreateLobbyUser(userId, lobby.Id); err != nil {
+			return err
+		}
+	}
+
 	return err
 }
 
-func (m *MariaDB) CreateLobbyUserSubmission(userSubmission *types.LobbyUser) error {
-	query := `INSERT INTO lobby_user (lobby_id, user_id, code, language, tests_passed, submission_date)
-		VALUES (?, ?, ?, ?, ?, ?);
-	;`
+func (m *MariaDB) CreateLobbyUser(userId int, lobbyId int) error {
+	query := `INSERT INTO lobby_user (lobby_id, user_id) VALUES (?, ?);`
+	_, err := m.db.Exec(query, lobbyId, userId)
+
+	return err
+}
+
+func (m *MariaDB) UpdateLobbyUserSubmission(userSubmission *types.LobbyUser) error {
+	// query := `INSERT INTO lobby_user (lobby_id, user_id, code, language, tests_passed, submitted_at)
+	// 	VALUES (?, ?, ?, ?, ?, ?);
+	// ;`
+	query := `UPDATE lobby_user SET code = ?, language = ?, tests_passed = ?, submitted_at = ?
+		WHERE lobby_id = ? AND user_id = ?;`
+
 	_, err := m.db.Exec(
 		query,
-		userSubmission.LobbyId,
-		userSubmission.UserId,
 		userSubmission.Code,
 		userSubmission.Language,
 		userSubmission.TestsPassed,
-		userSubmission.SubmissionDate,
+		userSubmission.SubmittedAt,
+		userSubmission.LobbyId,
+		userSubmission.UserId,
 	)
-	if err != nil {
-		return err
-	}
 
-	id, err := m.getLastInsertID()
-	if err != nil {
-		return err
-	}
-
-	userSubmission.Id = id
-	// TODO: Update userSubmission.CreatedAt and userSubmission.UpdatedAt
 	return err
 }
 
 func (m *MariaDB) GetLobbyByUniqueId(uniqueId string) (*types.Lobby, error) {
-	query := `SELECT id, uuid, challenge_id, owner_id, status, max_players, game_duration, allowed_languages, created_at, updated_at
+	query := `SELECT id, uuid, challenge_id, owner_id, ended, max_players, game_duration, allowed_languages, created_at, updated_at
 		FROM lobby WHERE uuid = ?;`
 
 	row := m.db.QueryRow(query, uniqueId)
@@ -81,7 +88,7 @@ func (m *MariaDB) GetLobbyByUniqueId(uniqueId string) (*types.Lobby, error) {
 		&lobby.UniqueId,
 		&lobby.ChallengeId,
 		&lobby.OwnerId,
-		&lobby.Status,
+		&lobby.Ended,
 		&lobby.MaxPlayers,
 		&lobby.GameDuration,
 		&allowLanguages,
@@ -104,19 +111,10 @@ func (m *MariaDB) GetLobbyByUniqueId(uniqueId string) (*types.Lobby, error) {
 	return lobby, nil
 }
 
-func (m *MariaDB) EndLobby(lobbyUniqueId string) error {
-	query := `UPDATE lobby SET status = 'closed' WHERE uuid = ?;`
-	_, err := m.db.Exec(query, lobbyUniqueId)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (m *MariaDB) GetLobbyResults(lobbyUniqueId string) (*types.LobbyResults, error) {
-	query := `SELECT l.id, l.uuid, l.challenge_id, l.owner_id, l.status, l.max_players, l.game_duration, l.allowed_languages, l.created_at, l.updated_at,
-		u.id, u.lobby_id, u.user_id, u.code, u.language, u.tests_passed, u.submission_date, u.created_at, u.updated_at
+	query := `SELECT
+		l.id, l.uuid, l.challenge_id, l.owner_id, l.ended, l.mode, l.max_players, l.game_duration, l.allowed_languages, l.created_at, l.updated_at,
+		u.id, u.lobby_id, u.user_id, u.code, u.language, u.tests_passed, u.show_code, u.submitted_at, u.created_at, u.updated_at
 		FROM lobby l
 		JOIN lobby_user u ON l.id = u.lobby_id
 		WHERE l.uuid = ?;`
@@ -136,7 +134,8 @@ func (m *MariaDB) GetLobbyResults(lobbyUniqueId string) (*types.LobbyResults, er
 			&lobby.UniqueId,
 			&lobby.ChallengeId,
 			&lobby.OwnerId,
-			&lobby.Status,
+			&lobby.Ended,
+			&lobby.Mode,
 			&lobby.MaxPlayers,
 			&lobby.GameDuration,
 			&allowLanguages,
@@ -149,7 +148,8 @@ func (m *MariaDB) GetLobbyResults(lobbyUniqueId string) (*types.LobbyResults, er
 			&user.Code,
 			&user.Language,
 			&user.TestsPassed,
-			&user.SubmissionDate,
+			&user.ShowCode,
+			&user.SubmittedAt,
 			&user.CreatedAt,
 			&user.UpdatedAt,
 		)
@@ -180,16 +180,28 @@ func (m *MariaDB) GetLobbyResults(lobbyUniqueId string) (*types.LobbyResults, er
 	}, nil
 }
 
-// -- Init Tables --
-func (m *MariaDB) InitLobbyTables() error {
-	if err := m.createTableLobby(); err != nil {
-		return err
-	}
-	if err := m.createTableLobbyUser(); err != nil {
-		return err
-	}
+func (m *MariaDB) EndLobby(lobbyUniqueId string) error {
+	query := `UPDATE lobby SET ended = TRUE WHERE uuid = ?;`
+	_, err := m.db.Exec(query, lobbyUniqueId)
 
-	return nil
+	return err
+}
+
+func (m *MariaDB) UpdateShareLobbyCode(lobbyId int, userId int, showCode bool) error {
+	query := `UPDATE lobby_user SET show_code = ? WHERE lobby_id = ? AND user_id = ?;`
+	_, err := m.db.Exec(query, showCode, lobbyId, userId)
+
+	return err
+}
+
+// -- Init Tables --
+func (m *MariaDB) InitLobbyTables() []MigrationFunc {
+	return []MigrationFunc{
+		m.createTableMode,
+		m.createTableLanguage,
+		m.createTableLobby,
+		m.createTableLobbyUser,
+	}
 }
 
 func (m *MariaDB) createTableLobby() error {
@@ -198,15 +210,15 @@ func (m *MariaDB) createTableLobby() error {
 		uuid VARCHAR(255) NOT NULL,
 		challenge_id INT NOT NULL,
 		owner_id INT NOT NULL,
-		status VARCHAR(50) DEFAULT 'open',
+		ended BOOLEAN NOT NULL DEFAULT FALSE,
 		
-		mode_id INT NOT NULL,
+		mode VARCHAR(50) NOT NULL,
 		max_players INT NOT NULL,
 		game_duration INT NOT NULL,
 		allowed_languages VARCHAR(255) NOT NULL,
 
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
 		PRIMARY KEY (id),
 		FOREIGN KEY (challenge_id) REFERENCES challenge(id),
@@ -215,11 +227,8 @@ func (m *MariaDB) createTableLobby() error {
 		UNIQUE INDEX (uuid)
 	);`
 	_, err := m.db.Exec(query)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 func (m *MariaDB) createTableLobbyUser() error {
@@ -228,24 +237,77 @@ func (m *MariaDB) createTableLobbyUser() error {
 		lobby_id INT NOT NULL,
 		user_id INT NOT NULL,
 		
-		code TEXT NOT NULL,
-		language VARCHAR(50) NOT NULL,
-		tests_passed INT NOT NULL,
-		submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		code TEXT,
+		language VARCHAR(50),
+		tests_passed INT NOT NULL DEFAULT 0,
+		show_code BOOLEAN NOT NULL DEFAULT FALSE,
+		match_rank INT,
+		submitted_at TIMESTAMP,
 
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
 		PRIMARY KEY (id),
-		UNIQUE INDEX (id),
-		UNIQUE INDEX (lobby_id, user_id),
 		FOREIGN KEY (lobby_id) REFERENCES lobby(id),
-		FOREIGN KEY (user_id) REFERENCES user(id)
+		FOREIGN KEY (user_id) REFERENCES user(id),
+		UNIQUE INDEX (id),
+		UNIQUE INDEX (lobby_id, user_id)
+	);`
+	_, err := m.db.Exec(query)
+	return err
+}
+
+func (m *MariaDB) createTableMode() error {
+	query := `CREATE TABLE IF NOT EXISTS mode (
+		id INT unique AUTO_INCREMENT,
+		name VARCHAR(50) NOT NULL,
+		description VARCHAR(255) NOT NULL,
+		
+		PRIMARY KEY (id),
+		UNIQUE INDEX (id)
 	);`
 	_, err := m.db.Exec(query)
 	if err != nil {
 		return err
 	}
 
-	return nil
+	queryDefaultValues := `INSERT IGNORE INTO mode
+	(id, name, description) VALUES	
+	(1, 'speed', 'The shortest time wins.'),
+	(2, 'size', 'The shortest code wins.'),
+	(3, 'efficiency', 'The most efficient code wins.'),
+	(4, 'memory', 'The most memory efficient code wins.'),
+	(5, 'readability', 'The most readable code wins.'),
+	(6, 'style', 'The most stylish code wins.');
+	`
+	_, err = m.db.Exec(queryDefaultValues)
+	return err
+}
+
+func (m *MariaDB) createTableLanguage() error {
+	query := `CREATE TABLE IF NOT EXISTS language (
+		id INT unique AUTO_INCREMENT,
+		name VARCHAR(50) NOT NULL,
+
+		PRIMARY KEY (id),
+		UNIQUE INDEX (id),
+		UNIQUE INDEX (name)
+	);`
+	_, err := m.db.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	queryDefaultValues := `INSERT IGNORE INTO language
+	(id, name) VALUES
+	(0, 'c'),
+	(1, 'cpp'),
+	(2, 'java'),
+	(3, 'js'),
+	(4, 'golang'),
+	(5, 'rust'),
+	(6, 'ruby'),
+	(7, 'python');`
+	_, err = m.db.Exec(queryDefaultValues)
+	return err
 }

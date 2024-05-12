@@ -20,6 +20,32 @@
     },
     "host": "localhost",
     "paths": {
+        "/access_token": {
+            "get": {
+                "description": "Access token endpoint, it will return a new access token if the refresh token is valid",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Access Token",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Health check endpoint",
@@ -70,7 +96,7 @@
             }
         },
         "/lobby/{lobbyUniqueId}/submission": {
-            "post": {
+            "patch": {
                 "description": "Update lobby",
                 "produces": [
                     "application/json"
@@ -104,6 +130,32 @@
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "get": {
+                "description": "Logout endpoint, it will delete the refresh token cookie",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }
@@ -344,6 +396,41 @@
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Error"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/lobby/results/{lobbyUniqueId}": {
+            "get": {
+                "description": "Get lobby results",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "lobby"
+                ],
+                "summary": "Get lobby results",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Lobby unique id",
+                        "name": "lobbyUniqueId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.LobbyResults"
+                        }
                     },
                     "500": {
                         "description": "Internal Server Error",
@@ -650,7 +737,44 @@
             }
         },
         "types.CreateLobbyRequest": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "challenge_id": {
+                    "type": "integer"
+                },
+                "lobby_id": {
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "settings": {
+                    "type": "object",
+                    "properties": {
+                        "allowed_languages": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "game_duration": {
+                            "type": "integer"
+                        },
+                        "max_players": {
+                            "type": "integer"
+                        },
+                        "mode": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "users_id": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                }
+            }
         },
         "types.CreateUserRequest": {
             "type": "object",
@@ -660,6 +784,103 @@
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "types.Lobby": {
+            "type": "object",
+            "properties": {
+                "allowed_languages": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "challenge_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "ended": {
+                    "type": "boolean"
+                },
+                "game_duration": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "max_players": {
+                    "type": "integer"
+                },
+                "mode": {
+                    "description": "Settings",
+                    "type": "string"
+                },
+                "owner_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "users_id": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "uuid": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.LobbyResults": {
+            "type": "object",
+            "properties": {
+                "lobby": {
+                    "$ref": "#/definitions/types.Lobby"
+                },
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.LobbyUserResult"
+                    }
+                }
+            }
+        },
+        "types.LobbyUserResult": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "lobby_id": {
+                    "type": "integer"
+                },
+                "show_code": {
+                    "type": "boolean"
+                },
+                "submitted_at": {
+                    "type": "string"
+                },
+                "tests_passed": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -680,6 +901,14 @@
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.ShareLobbyCodeRequest": {
+            "type": "object",
+            "properties": {
+                "share_code": {
+                    "type": "boolean"
                 }
             }
         },

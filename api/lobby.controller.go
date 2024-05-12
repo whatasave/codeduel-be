@@ -15,10 +15,19 @@ func (s *Server) GetLobbyRouter() http.Handler {
 	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/submission", convertToHandleFunc(s.handleLobbyUserSubmission))
 	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/endgame", convertToHandleFunc(s.handleLobbyEnd))
 	router.HandleFunc("GET /lobby/results/{lobbyUniqueId}", convertToHandleFunc(s.handleGetResults))
+	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/sharecode", convertToHandleFunc(s.handleShareCode, AuthMiddleware))
 
 	return router
 }
 
+// @Summary		Get lobby results
+// @Description	Get lobby results
+// @Tags			lobby
+// @Produce		json
+// @Param			lobbyUniqueId	path		string	true	"Lobby unique id"
+// @Success		200				{object}	types.LobbyResults
+// @Failure		500				{object}	Error
+// @Router			/v1/lobby/results/{lobbyUniqueId} [get]
 func (s *Server) handleGetResults(w http.ResponseWriter, r *http.Request) error {
 	lobbyUniqueId := r.PathValue("lobbyUniqueId")
 	log.Print("[API] Getting results for lobby ", lobbyUniqueId)
@@ -45,7 +54,6 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) error
 	if err := json.NewDecoder(r.Body).Decode(createLobbyPayload); err != nil {
 		return err
 	}
-	log.Print("[API] Creating lobby ", createLobbyPayload)
 
 	if err := s.db.CreateLobby(&types.Lobby{
 		UniqueId:    createLobbyPayload.LobbyId,
@@ -53,6 +61,7 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) error
 		UsersId:     createLobbyPayload.UsersId,
 		ChallengeId: createLobbyPayload.ChallengeId,
 
+		Mode:             createLobbyPayload.Settings.Mode,
 		MaxPlayers:       createLobbyPayload.Settings.MaxPlayers,
 		GameDuration:     createLobbyPayload.Settings.GameDuration,
 		AllowedLanguages: createLobbyPayload.Settings.AllowedLanguages,
@@ -72,7 +81,7 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) error
 // @Success		204
 // @Failure		500	{object}	Error
 // @Failure		403	{object}	Error
-// @Router			/lobby/{lobbyUniqueId}/submission [post]
+// @Router			/lobby/{lobbyUniqueId}/submission [patch]
 func (s *Server) handleLobbyUserSubmission(w http.ResponseWriter, r *http.Request) error {
 	lobbyUniqueId := r.PathValue("lobbyUniqueId")
 	lobbySubmissionPayload := &types.LobbyUserSubmissionRequest{}
@@ -86,17 +95,17 @@ func (s *Server) handleLobbyUserSubmission(w http.ResponseWriter, r *http.Reques
 		return err
 	}
 
-	if lobby.Status != "open" {
-		return WriteJSON(w, http.StatusForbidden, Error{Err: "Lobby is not open"})
+	if lobby.Ended {
+		return WriteJSON(w, http.StatusForbidden, Error{Err: "The match has already ended"})
 	}
 
-	if err := s.db.CreateLobbyUserSubmission(&types.LobbyUser{
-		LobbyId:        lobby.Id,
-		UserId:         lobbySubmissionPayload.UserId,
-		Code:           lobbySubmissionPayload.Code,
-		Language:       lobbySubmissionPayload.Language,
-		TestsPassed:    lobbySubmissionPayload.TestsPassed,
-		SubmissionDate: lobbySubmissionPayload.Date,
+	if err := s.db.UpdateLobbyUserSubmission(&types.LobbyUser{
+		LobbyId:     lobby.Id,
+		UserId:      lobbySubmissionPayload.UserId,
+		Code:        lobbySubmissionPayload.Code,
+		Language:    lobbySubmissionPayload.Language,
+		TestsPassed: lobbySubmissionPayload.TestsPassed,
+		SubmittedAt: lobbySubmissionPayload.Date,
 	}); err != nil {
 		return err
 	}
@@ -118,4 +127,35 @@ func (s *Server) handleLobbyEnd(w http.ResponseWriter, r *http.Request) error {
 
 	w.WriteHeader(http.StatusNoContent)
 	return s.db.EndLobby(lobbyUniqueId)
+}
+
+// @Summary		Share code
+// @Description	Share code
+// @Tags			lobby
+// @Produce		json
+// @Param			lobbyUniqueId	path	string						true	"Lobby unique id"
+// @Param			shareCode		body	types.ShareLobbyCodeRequest	true	"Share code request"
+// @Success		204
+// @Failure		500	{object}	Error
+func (s *Server) handleShareCode(w http.ResponseWriter, r *http.Request) error {
+	user := GetAuthUser(r)
+	if user == nil {
+		return WriteJSON(w, http.StatusUnauthorized, Error{Err: "Unauthorized++"})
+	}
+
+	lobbyUniqueId := r.PathValue("lobbyUniqueId")
+	shareLobbyCodePayload := &types.ShareLobbyCodeRequest{}
+	if err := json.NewDecoder(r.Body).Decode(shareLobbyCodePayload); err != nil {
+		return err
+	}
+
+	lobby, err := s.db.GetLobbyByUniqueId(lobbyUniqueId)
+	if err != nil {
+		return err
+	}
+
+	log.Print("[API] Share code ", lobbyUniqueId)
+
+	w.WriteHeader(http.StatusNoContent)
+	return s.db.UpdateShareLobbyCode(lobby.Id, user.Id, shareLobbyCodePayload.ShareCode)
 }

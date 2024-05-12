@@ -70,3 +70,8 @@ type UserResponse struct {
 	Role          string `json:"role"`
 	CreatedAt     string `json:"created_at"`
 }
+
+type RefreshTokenPayload struct {
+	UserID    int   `json:"user_id" jwt:"sub"`
+	ExpiresAt int64 `json:"expires_at" jwt:"exp"`
+}

@@ -32,23 +32,27 @@ type DB interface {
 	GetChallengesByOwnerID(int) (*[]types.Challenge, error)
 
 	CreateLobby(*types.Lobby) error
-	CreateLobbyUserSubmission(*types.LobbyUser) error
+	CreateLobbyUser(int, int) error
+	UpdateLobbyUserSubmission(*types.LobbyUser) error
 	GetLobbyByUniqueId(string) (*types.Lobby, error)
-	EndLobby(string) error
 	GetLobbyResults(string) (*types.LobbyResults, error)
+	EndLobby(string) error
+	UpdateShareLobbyCode(int, int, bool) error
 
 	GetAuthByProviderAndID(string, string) (*types.AuthEntry, error)
 	CreateAuth(*types.AuthEntry) error
+	CreateRefreshToken(int, *utils.JWT) error
+	DeleteRefreshToken(string) error
 }
 
 type MariaDB struct {
 	db *sql.DB
 }
 
+type MigrationFunc func() error
+
 func NewDB(host, port, user, pass, name string) (*MariaDB, error) {
 	dsn := user + ":" + pass + "@tcp(" + host + ":" + port + ")/" + name
-
-	log.Printf("%s%s Connecting to: %s", utils.GetLogTag("db"), utils.GetLogTag("warn"), dsn)
 
 	pool, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -125,6 +129,28 @@ func (m *MariaDB) InitDatabase() error {
 	_, err := m.db.Exec(query)
 
 	return err
+}
+
+func (m *MariaDB) Migration(migrationFuncs ...MigrationFunc) error {
+	for _, migration := range migrationFuncs {
+		if err := migration(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *MariaDB) MigrationBulk(migrationFuncs ...[]MigrationFunc) error {
+	for _, migrations := range migrationFuncs {
+		// migrations = append(migrations, migrations...)
+		err := m.Migration(migrations...)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // func Query(ctx context.Context, id int64) {

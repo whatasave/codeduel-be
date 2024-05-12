@@ -111,12 +111,10 @@ func (m *MariaDB) GetChallengesByOwnerID(ownerID int) (*[]types.Challenge, error
 }
 
 // -- Init Tables --
-func (m *MariaDB) InitChallengeTables() error {
-	if err := m.createTableChallenge(); err != nil {
-		return err
+func (m *MariaDB) InitChallengeTables() []MigrationFunc {
+	return []MigrationFunc{
+		m.createTableChallenge,
 	}
-
-	return nil
 }
 
 func (m *MariaDB) createTableChallenge() error {

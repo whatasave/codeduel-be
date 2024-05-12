@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/types"
 	"github.com/xedom/codeduel/utils"
 )
@@ -50,13 +49,13 @@ func ChainMiddleware(middlewares ...Middleware) Middleware {
 	}
 }
 
-func CreateCorsMiddleware(config *config.Config) Middleware {
+func CreateCorsMiddleware(config *utils.Config) Middleware {
 	return func(next http.Handler) http.Handler {
 		return CorsMiddleware(next, config)
 	}
 }
 
-func CorsMiddleware(next http.Handler, config *config.Config) http.Handler {
+func CorsMiddleware(next http.Handler, config *utils.Config) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", config.CorsOrigin)
 		w.Header().Set("Access-Control-Allow-Methods", config.CorsMethods)
@@ -67,7 +66,7 @@ func CorsMiddleware(next http.Handler, config *config.Config) http.Handler {
 	})
 }
 
-func OnlyInternalServiceMiddleware(config *config.Config, next http.Handler) http.Handler {
+func OnlyInternalServiceMiddleware(config *utils.Config, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("x-service-token")
 		if token != config.ServiceToken {
@@ -96,8 +95,6 @@ func AuthMiddleware(w http.ResponseWriter, r *http.Request) *http.Request {
 		}
 		tokenString = cookie.Value
 	}
-
-	log.Printf("tokenString: %s", tokenString)
 
 	userHeader, err := utils.ValidateUserJWT(tokenString)
 	if err != nil {

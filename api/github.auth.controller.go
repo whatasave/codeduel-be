@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/xedom/codeduel/types"
 	"github.com/xedom/codeduel/utils"
@@ -17,7 +18,7 @@ func (s *Server) GetGithubAuthRouter() http.Handler {
 
 // @Summary		Login with GitHub
 // @Description	Endpoint to log in with GitHub OAuth, it will redirect to GitHub OAuth page to authenticate
-// @Tags		auth
+// @Tags			auth
 // @Success		302
 // @Router			/v1/github/auth [get]
 func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error {
@@ -25,13 +26,22 @@ func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error 
 
 	redirect := "https://github.com/login/oauth/authorize"
 
-	urlParams.Add("client_id", s.config.AuthGitHubClientID)
-	urlParams.Add("redirect_uri", s.config.AuthGitHubClientCallbackURL)
-	urlParams.Add("return_to", "/frontend")
-	urlParams.Add("response_type", "code")
-	urlParams.Add("scope", "user:email")
-	urlParams.Add("state", "an_unguessable_random_string") // TODO: JWT It is used to protect against cross-site request forgery attacks.
-	urlParams.Add("allow_signup", "true")
+	state := genOauthState()
+	http.SetCookie(w, &http.Cookie{
+		Name:   "oauth_state",
+		Value:  state,
+		Path:   "/",
+		MaxAge: 60,
+	})
+
+	// if r.FormValue("return_to") != "" {
+	// 	w.Header().Set("Set-Cookie", fmt.Sprintf("return_to=%s; Path=/; HttpOnly", r.FormValue("return_to")))
+	// }
+	urlParams.Set("client_id", s.config.AuthGitHubClientID)
+	urlParams.Set("redirect_uri", s.config.AuthGitHubClientCallbackURL)
+	urlParams.Set("scope", "user:email")
+	urlParams.Set("state", state) // TODO: JWT It is used to protect against cross-site request forgery attacks.
+	urlParams.Set("allow_signup", "true")
 	encodedParams := urlParams.Encode()
 
 	url := fmt.Sprintf("%s?%s", redirect, encodedParams)
@@ -43,17 +53,23 @@ func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error 
 // @Description	Endpoint to handle GitHub OAuth callback, it will exchange code for access token and get user data from GitHub, then it will register a new user or login the user if it already exists. It will set a cookie with JWT token and redirect to frontend with the JWT token as a query parameter.
 // @Tags			auth
 // @Success		302
-// @Failure		500	{object} Error
+// @Failure		500	{object}	Error
 // @Router			/v1/github/auth/callback [get]
 func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request) error {
 	urlParams := r.URL.Query()
 	if !urlParams.Has("code") || !urlParams.Has("state") {
 		return fmt.Errorf("code or state is empty")
 	}
-	code := urlParams.Get("code")
-	state := urlParams.Get("state") // It is used to protect against cross-site request forgery attacks.
+	session_code := urlParams.Get("code")
+	state := urlParams.Get("state")
+	saved_state := getCookie(r, "oauth_state")
+	returnTo := getCookie(r, "return_to")
 
-	githubAccessToken, err := GetGithubAccessToken(s.config.AuthGitHubClientID, s.config.AuthGitHubClientSecret, code, state)
+	if state != saved_state {
+		return fmt.Errorf("state does not match")
+	}
+
+	githubAccessToken, err := GetGithubAccessToken(s.config.AuthGitHubClientID, s.config.AuthGitHubClientSecret, session_code, state)
 	if err != nil {
 		return err
 	}
@@ -98,32 +114,37 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 		return registerOrLoginError
 	}
 
-	// generate jwt
-	token, err := utils.CreateJWT(user)
+	// generating refresh token
+	refreshToken, err := utils.GenerateRefreshToken(user.Id)
+	if err != nil {
+		return err
+	}
+
+	err = s.db.CreateRefreshToken(user.Id, refreshToken)
 	if err != nil {
 		return err
 	}
 
 	// set cookie
-	cookie := &http.Cookie{
-		Name:    "jwt",
-		Value:   token.Jwt,
+	http.SetCookie(w, &http.Cookie{
+		Name:    "refresh_token",
+		Value:   refreshToken.Jwt,
 		Domain:  s.config.CookieDomain,
 		Path:    s.config.CookiePath,
-		Expires: utils.UnixTimeToTime(token.ExpiresAt),
-		// MaxAge: 86400,
-		HttpOnly: s.config.CookieHTTPOnly, //true,
-		Secure:   s.config.CookieSecure,   //false,
+		Expires: time.Unix(refreshToken.ExpiresAt, 0),
+		// MaxAge: s.config.CookieMaxAge,
+		HttpOnly: s.config.CookieHTTPOnly,
+		Secure:   s.config.CookieSecure,
 		// SameSite: http.SameSiteStrictMode,
 		// SameSite: http.SameSiteNoneMode,
 		SameSite: http.SameSiteLaxMode,
-	}
+	})
 
-	http.SetCookie(w, cookie)
-	// fmt.Printf("Cookie: %+v\n", cookie)
-	// TODO: redirect to frontend
-	// WriteJSON(w, http.StatusOK, token)
-	redirectUrl := fmt.Sprintf("%s?jwt=%s", s.config.FrontendURLAuthCallback, token.Jwt)
+	// redirect to frontend
+	redirectUrl := fmt.Sprintf("%s?jwt=%s", s.config.FrontendURL, refreshToken.Jwt)
+	if returnTo != "" {
+		redirectUrl += fmt.Sprintf("&return_to=%s", returnTo)
+	}
 	http.Redirect(w, r, redirectUrl, http.StatusPermanentRedirect)
 
 	return nil

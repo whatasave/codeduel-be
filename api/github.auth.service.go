@@ -75,3 +75,7 @@ func RegisterGithubUser(db db.DB, githubUser *types.GithubUser) (*types.User, er
 func LoginGithubUser(db db.DB, auth *types.AuthEntry) (*types.User, error) {
 	return db.GetUserByID(auth.UserId)
 }
+
+func genOauthState() string {
+	return utils.GenerateRandomString(32)
+}

@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xedom/codeduel/config"
 	"github.com/xedom/codeduel/db"
 	"github.com/xedom/codeduel/types"
 	"github.com/xedom/codeduel/utils"
@@ -26,7 +25,7 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 }
 
 type Server struct {
-	config  *config.Config
+	config  *utils.Config
 	address string
 	db      db.DB
 }
@@ -48,7 +47,7 @@ func (handler Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func NewAPIServer(config *config.Config, db db.DB) *Server {
+func NewAPIServer(config *utils.Config, db db.DB) *Server {
 	return &Server{
 		config:  config,
 		db:      db,
@@ -82,7 +81,6 @@ func NewAPIServer(config *config.Config, db db.DB) *Server {
 // @schemes	http
 func (s *Server) Run() error {
 	v1 := http.NewServeMux()
-	v1.Handle("POST /validateToken", convertToHandleFunc(s.handleValidateToken))
 	v1.Handle("/user", s.GetUserRouter())
 	v1.Handle("/user/", s.GetUserRouter())
 	v1.Handle("/lobby", s.GetLobbyRouter())
@@ -92,33 +90,14 @@ func (s *Server) Run() error {
 	v1.Handle("/auth/github", s.GetGithubAuthRouter())
 	v1.Handle("/auth/github/", s.GetGithubAuthRouter())
 
+	v1.Handle("POST /validateToken", convertToHandleFunc(s.handleValidateToken))
+	v1.Handle("GET /logout", convertToHandleFunc(s.handleLogout))
+	v1.Handle("GET /access_token", convertToHandleFunc(s.handleAccessToken))
+
 	main := http.NewServeMux()
 	main.HandleFunc("/v1", convertToHandleFunc(s.handleRoot))
 	main.HandleFunc("/health", convertToHandleFunc(s.handleHealth))
-	// main.HandleFunc("GET /admin", convertToHandleFunc(func(w http.ResponseWriter, r *http.Request) error {
-	// 	tokenString, err := jwt.NewWithClaims(jwt.SigningMethodHS256, &jwt.MapClaims{
-	// 		"iss":      "codeduel",
-	// 		"sub":      999,
-	// 		"exp":      time.Now().Add(time.Hour * 99999).Unix(),
-	// 		"username": "admin",
-	// 		"email":    "admin@codeduel.it",
-	// 		"avatar":   "",
-	// 		"role":     "admin",
-	// 	}).SignedString([]byte("yoooSuperSecret"))
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	return WriteJSON(w, http.StatusOK, tokenString)
-	// }))
-	// main.HandleFunc("/docs/", httpSwagger.Handler(httpSwagger.URL("http://"+s.address+"/docs/doc.json")))
-	main.HandleFunc("/docs/", httpSwagger.Handler(
-	// httpSwagger.UIConfig(map[string]string{
-	// 	"showExtensions":        "true",
-	// 	"onComplete":            `() => { window.ui.setBasePath('v3'); }`,
-	// 	"defaultModelRendering": `"model"`,
-	// }),
-	))
+	main.HandleFunc("/docs/", httpSwagger.Handler())
 	main.Handle("/v1/", http.StripPrefix("/v1", v1))
 
 	var wg sync.WaitGroup
@@ -143,14 +122,13 @@ func (s *Server) Run() error {
 	return nil
 }
 
-func startHttpsServer(config *config.Config, handler http.Handler, wg *sync.WaitGroup) {
+func startHttpsServer(config *utils.Config, handler http.Handler, wg *sync.WaitGroup) {
 	tlsCert, err := tls.LoadX509KeyPair(config.SSLCert, config.SSLKey)
 	if err != nil {
 		log.Printf("%s%s failed to load SSL certificate: %s", utils.GetLogTag("API"), utils.GetLogTag("error"), err.Error())
 	}
 
-	sslCertFile := utils.GetEnv("SSL_CERT_FILE", "/etc/ssl/certs")
-	log.Printf("%s SSL Cert file: %s", utils.GetLogTag("info"), sslCertFile)
+	// sslCertFile := utils.GetEnv("SSL_CERT_FILE", "/etc/ssl/certs")
 
 	// certManager := autocert.Manager{
 	// 	Prompt:     autocert.AcceptTOS,
@@ -191,7 +169,7 @@ func startHttpsServer(config *config.Config, handler http.Handler, wg *sync.Wait
 	wg.Done()
 }
 
-func startHttpServer(config *config.Config, handler http.Handler, wg *sync.WaitGroup) {
+func startHttpServer(config *utils.Config, handler http.Handler, wg *sync.WaitGroup) {
 	httpAddress := fmt.Sprintf("%s:%s", config.Host, config.PortHttp)
 
 	server := &http.Server{
@@ -273,18 +251,69 @@ func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) err
 	return WriteJSON(w, http.StatusOK, decodedUserData)
 }
 
-func oldMakeHTTPHandleFunc(fn Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := fn(w, r); err != nil {
-			// http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Printf("%s %s", utils.GetLogTag("error"), err.Error())
-			err := WriteJSON(w, http.StatusInternalServerError, Error{Err: err.Error()})
-			if err != nil {
-				log.Printf("%s %s", utils.GetLogTag("error"), err.Error())
-			}
-		}
+// @Summary		Logout
+// @Description	Logout endpoint, it will delete the refresh token cookie
+// @Tags			auth
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	map[string]string
+// @Router			/logout [get]
+func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) error {
+	returnTo := r.FormValue("return_to")
+
+	// delete refresh token from db
+	if refreshToken := getCookie(r, "refresh_token"); refreshToken != "" {
+		_ = s.db.DeleteRefreshToken(refreshToken)
 	}
+
+	// delete cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:   "refresh_token",
+		Value:  "",
+		MaxAge: -1,
+	})
+
+	// redirect to login
+	redirectUrl := s.config.FrontendURL
+	if returnTo != "" {
+		redirectUrl = returnTo
+	}
+	http.Redirect(w, r, redirectUrl, http.StatusPermanentRedirect)
+	return nil
 }
+
+// @Summary		Access Token
+// @Description	Access token endpoint, it will return a new access token if the refresh token is valid
+// @Tags			auth
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	map[string]string
+// @Router			/access_token [get]
+func (s *Server) handleAccessToken(w http.ResponseWriter, r *http.Request) error {
+	refreshToken := getCookie(r, "refresh_token")
+	if refreshToken == "" {
+		return fmt.Errorf("refresh token not found")
+	}
+
+	refreshTokenPayload := &types.RefreshTokenPayload{}
+	if err := utils.ValidateAndParseJWT(refreshToken, refreshTokenPayload); err != nil {
+		return err
+	}
+
+	user, err := s.db.GetUserByID(refreshTokenPayload.UserID)
+	if err != nil {
+		return err
+	}
+
+	accessToken, err := utils.GenerateAccessToken(user)
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, map[string]string{"access_token": accessToken.Jwt})
+}
+
+// -- Utils --
 
 func convertToHandleFunc(handler Handler, middlewares ...Middleware2) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -303,5 +332,13 @@ func convertToHandleFunc(handler Handler, middlewares ...Middleware2) http.Handl
 			}
 		}
 	}
+}
 
+// get cookie from request by `name` or return empty string
+func getCookie(r *http.Request, name string) string {
+	if cookie, err := r.Cookie(name); err == nil {
+		return cookie.Value
+	}
+
+	return ""
 }

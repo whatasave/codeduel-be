@@ -57,6 +57,30 @@ definitions:
         type: string
     type: object
   types.CreateLobbyRequest:
+    properties:
+      challenge_id:
+        type: integer
+      lobby_id:
+        type: string
+      owner_id:
+        type: integer
+      settings:
+        properties:
+          allowed_languages:
+            items:
+              type: string
+            type: array
+          game_duration:
+            type: integer
+          max_players:
+            type: integer
+          mode:
+            type: string
+        type: object
+      users_id:
+        items:
+          type: integer
+        type: array
     type: object
   types.CreateUserRequest:
     properties:
@@ -64,6 +88,70 @@ definitions:
         type: string
       username:
         type: string
+    type: object
+  types.Lobby:
+    properties:
+      allowed_languages:
+        items:
+          type: string
+        type: array
+      challenge_id:
+        type: integer
+      created_at:
+        type: string
+      ended:
+        type: boolean
+      game_duration:
+        type: integer
+      id:
+        type: integer
+      max_players:
+        type: integer
+      mode:
+        description: Settings
+        type: string
+      owner_id:
+        type: integer
+      updated_at:
+        type: string
+      users_id:
+        items:
+          type: integer
+        type: array
+      uuid:
+        type: string
+    type: object
+  types.LobbyResults:
+    properties:
+      lobby:
+        $ref: '#/definitions/types.Lobby'
+      results:
+        items:
+          $ref: '#/definitions/types.LobbyUserResult'
+        type: array
+    type: object
+  types.LobbyUserResult:
+    properties:
+      code:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      language:
+        type: string
+      lobby_id:
+        type: integer
+      show_code:
+        type: boolean
+      submitted_at:
+        type: string
+      tests_passed:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
     type: object
   types.LobbyUserSubmissionRequest:
     properties:
@@ -77,6 +165,11 @@ definitions:
         type: integer
       user_id:
         type: integer
+    type: object
+  types.ShareLobbyCodeRequest:
+    properties:
+      share_code:
+        type: boolean
     type: object
   types.UpdateChallengeRequest:
     properties:
@@ -166,6 +259,24 @@ info:
   title: CodeDuel API
   version: "1.0"
 paths:
+  /access_token:
+    get:
+      consumes:
+      - application/json
+      description: Access token endpoint, it will return a new access token if the
+        refresh token is valid
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Access Token
+      tags:
+      - auth
   /health:
     get:
       consumes:
@@ -199,7 +310,7 @@ paths:
       tags:
       - lobby
   /lobby/{lobbyUniqueId}/submission:
-    post:
+    patch:
       description: Update lobby
       parameters:
       - description: Update Lobby Request
@@ -224,6 +335,23 @@ paths:
       summary: Update lobby
       tags:
       - lobby
+  /logout:
+    get:
+      consumes:
+      - application/json
+      description: Logout endpoint, it will delete the refresh token cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Logout
+      tags:
+      - auth
   /v1:
     get:
       consumes:
@@ -387,6 +515,29 @@ paths:
           schema:
             $ref: '#/definitions/api.Error'
       summary: Create a new lobby
+      tags:
+      - lobby
+  /v1/lobby/results/{lobbyUniqueId}:
+    get:
+      description: Get lobby results
+      parameters:
+      - description: Lobby unique id
+        in: path
+        name: lobbyUniqueId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.LobbyResults'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Error'
+      summary: Get lobby results
       tags:
       - lobby
   /v1/user:

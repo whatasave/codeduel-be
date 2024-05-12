@@ -3,8 +3,10 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/xedom/codeduel/types"
+	"github.com/xedom/codeduel/utils"
 )
 
 func (m *MariaDB) getLastInsertID() (int, error) {
@@ -28,6 +30,25 @@ func (m *MariaDB) getLastInsertID() (int, error) {
 	}
 
 	return id, nil
+}
+
+func (m *MariaDB) CreateRefreshToken(userId int, token *utils.JWT) error {
+	query := `INSERT INTO refresh_token (user_id, token, expires_at) VALUES (?, ?, ?);`
+	_, err := m.db.Exec(query, userId, token.Jwt, time.Unix(token.ExpiresAt, 0))
+	return err
+}
+
+func (m *MariaDB) DeleteRefreshToken(token string) error {
+	query := `DELETE FROM refresh_token WHERE token = ?;`
+	res, err := m.db.Exec(query, token)
+	if err != nil {
+		return err
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return fmt.Errorf("refresh token with token %s not found", token)
+	}
+
+	return err
 }
 
 func (m *MariaDB) CreateAuth(auth *types.AuthEntry) error {
@@ -249,21 +270,14 @@ func (m *MariaDB) DeleteUserByUsername(username string) error {
 }
 
 // -- Init Tables --
-func (m *MariaDB) InitUserTables() error {
-	if err := m.createTableUser(); err != nil {
-		return err
+func (m *MariaDB) InitUserTables() []MigrationFunc {
+	return []MigrationFunc{
+		m.createTableUser,
+		m.createTableAuth,
+		m.createTableStats,
+		m.createTableUserStats,
+		m.createTableRefreshToken,
 	}
-	if err := m.createTableAuth(); err != nil {
-		return err
-	}
-	if err := m.createTableStats(); err != nil {
-		return err
-	}
-	if err := m.createTableUserStats(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (m *MariaDB) createTableUser() error {
@@ -342,6 +356,24 @@ func (m *MariaDB) createTableStats() error {
 	}
 
 	return nil
+}
+
+func (m *MariaDB) createTableRefreshToken() error {
+	query := `CREATE TABLE IF NOT EXISTS refresh_token (
+		id INT AUTO_INCREMENT,
+		user_id INT NOT NULL,
+		token VARCHAR(255) NOT NULL,
+
+		expires_at DATETIME NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+		PRIMARY KEY (id),
+		FOREIGN KEY (user_id) REFERENCES user(id),
+		UNIQUE INDEX (token)
+	);`
+	_, err := m.db.Exec(query)
+	return err
 }
 
 // -- Utils --
