@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -27,12 +28,7 @@ func (s *Server) handleGithubAuth(w http.ResponseWriter, r *http.Request) error 
 	redirect := "https://github.com/login/oauth/authorize"
 
 	state := genOauthState()
-	http.SetCookie(w, &http.Cookie{
-		Name:   "oauth_state",
-		Value:  state,
-		Path:   "/",
-		MaxAge: 60,
-	})
+	http.SetCookie(w, s.createCookie("oauth_state", state, time.Now().Add(time.Minute*1)))
 
 	// if r.FormValue("return_to") != "" {
 	// 	w.Header().Set("Set-Cookie", fmt.Sprintf("return_to=%s; Path=/; HttpOnly", r.FormValue("return_to")))
@@ -63,7 +59,6 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 	session_code := urlParams.Get("code")
 	state := urlParams.Get("state")
 	saved_state := getCookie(r, "oauth_state")
-	returnTo := getCookie(r, "return_to")
 
 	if state != saved_state {
 		return fmt.Errorf("state does not match")
@@ -73,13 +68,13 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return err
 	}
-	// fmt.Printf("Github Access Token: %s\n", githubAccessToken)
+	log.Println("-- Github Access Token")
 
 	githubUser, err := GetGithubUserData(githubAccessToken.AccessToken)
 	if err != nil {
 		return err
 	}
-	// fmt.Printf("Github User: %+v\n", *githubUser)
+	log.Println("-- Github User")
 
 	if githubUser.Email == "" {
 		githubEmails, err := GetGithubUserEmails(githubAccessToken.AccessToken)
@@ -88,7 +83,6 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 		}
 
 		// get primary email
-		// fmt.Printf("Github Emails: %+v\n", *githubEmails)
 		for _, email := range *githubEmails {
 			if email.Primary {
 				githubUser.Email = email.Email
@@ -96,12 +90,14 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 			}
 		}
 	}
+	log.Println("-- Github User Email")
 
 	// check if user exists
 	auth, err := s.db.GetAuthByProviderAndID("github", fmt.Sprintf("%d", githubUser.Id))
 	if err != nil {
 		auth = nil
 	}
+	log.Println("-- Auth")
 
 	user := &types.User{}
 	var registerOrLoginError error
@@ -113,39 +109,39 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 	if registerOrLoginError != nil {
 		return registerOrLoginError
 	}
+	log.Println("-- User")
 
 	// generating refresh token
 	refreshToken, err := utils.GenerateRefreshToken(user.Id)
 	if err != nil {
 		return err
 	}
+	log.Println("-- Refresh Token")
 
 	err = s.db.CreateRefreshToken(user.Id, refreshToken)
 	if err != nil {
 		return err
 	}
+	log.Println("-- Refresh Token Created")
 
-	// set cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:    "refresh_token",
-		Value:   refreshToken.Jwt,
-		Domain:  s.config.CookieDomain,
-		Path:    s.config.CookiePath,
-		Expires: time.Unix(refreshToken.ExpiresAt, 0),
-		// MaxAge: s.config.CookieMaxAge,
-		HttpOnly: s.config.CookieHTTPOnly,
-		Secure:   s.config.CookieSecure,
-		// SameSite: http.SameSiteStrictMode,
-		// SameSite: http.SameSiteNoneMode,
-		SameSite: http.SameSiteLaxMode,
-	})
+	accessToken, err := utils.GenerateAccessToken(user)
+	if err != nil {
+		return err
+	}
+	log.Println("-- Access Token")
+
+	w.Header().Add("Set-Cookie", s.createCookie("refresh_token", refreshToken.Jwt, time.Unix(refreshToken.ExpiresAt, 0)).String())
+	w.Header().Add("Set-Cookie", s.createCookie("access_token", accessToken.Jwt, time.Unix(accessToken.ExpiresAt, 0)).String())
+	log.Println("-- Cookies Set")
 
 	// redirect to frontend
 	// redirectUrl := fmt.Sprintf("%s?jwt=%s", s.config.FrontendURL, refreshToken.Jwt)
 	redirectUrl := s.config.FrontendURL
-	if returnTo != "" {
-		redirectUrl += fmt.Sprintf("&return_to=%s", returnTo)
+	if returnTo := getCookie(r, "return_to"); returnTo != "" {
+		redirectUrl = fmt.Sprintf("%s/login?return_to=%s", redirectUrl, returnTo)
 	}
+	log.Printf("-- Redirect URL: %s\n", redirectUrl)
+	w.Header().Add("Location", redirectUrl)
 	http.Redirect(w, r, redirectUrl, http.StatusPermanentRedirect)
 
 	return nil

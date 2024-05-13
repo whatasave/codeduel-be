@@ -278,8 +278,8 @@ func (m *MariaDB) createTableMode() error {
 	(3, 'efficiency', 'The most efficient code wins.'),
 	(4, 'memory', 'The most memory efficient code wins.'),
 	(5, 'readability', 'The most readable code wins.'),
-	(6, 'style', 'The most stylish code wins.');
-	`
+	(6, 'style', 'The most stylish code wins.');`
+
 	_, err = m.db.Exec(queryDefaultValues)
 	return err
 }

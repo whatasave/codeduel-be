@@ -266,14 +266,9 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) error {
 		_ = s.db.DeleteRefreshToken(refreshToken)
 	}
 
-	// delete cookie
-	// http.SetCookie(w, &http.Cookie{
-	// 	Name:   "refresh_token",
-	// 	Value:  "",
-	// 	MaxAge: -1,
-	// })
-	r.Header.Add("Set-Cookie", "refresh_token=; Path=/; HttpOnly; Max-Age=-1")
-	r.Header.Add("Set-Cookie", "access_token=; Path=/; HttpOnly; Max-Age=-1")
+	for _, cookieName := range []string{"refresh_token", "access_token", "oauth_state"} {
+		w.Header().Add("Set-Cookie", s.createCookie(cookieName, "", time.Now().Add(-1*(time.Minute*60*24))).String())
+	}
 
 	// redirect to login
 	redirectUrl := s.config.FrontendURL
@@ -312,16 +307,7 @@ func (s *Server) handleAccessToken(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "access_token",
-		Value:    accessToken.Jwt,
-		Domain:   s.config.CookieDomain,
-		Path:     s.config.CookiePath,
-		Expires:  time.Unix(accessToken.ExpiresAt, 0),
-		HttpOnly: s.config.CookieHTTPOnly,
-		Secure:   s.config.CookieSecure,
-		SameSite: http.SameSiteLaxMode,
-	})
+	http.SetCookie(w, s.createCookie("access_token", accessToken.Jwt, time.Unix(accessToken.ExpiresAt, 0)))
 
 	return WriteJSON(w, http.StatusOK, map[string]string{"access_token": accessToken.Jwt})
 }
@@ -354,4 +340,20 @@ func getCookie(r *http.Request, name string) string {
 	}
 
 	return ""
+}
+
+func (s *Server) createCookie(name, value string, expires time.Time) *http.Cookie {
+	return &http.Cookie{
+		Name:    name,
+		Value:   value,
+		Expires: expires,
+		Domain:  s.config.CookieDomain,
+		Path:    s.config.CookiePath,
+		// MaxAge: s.config.CookieMaxAge,
+		HttpOnly: s.config.CookieHTTPOnly,
+		Secure:   s.config.CookieSecure,
+		// SameSite: http.SameSiteStrictMode,
+		// SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
+	}
 }
