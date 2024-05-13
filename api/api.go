@@ -89,10 +89,9 @@ func (s *Server) Run() error {
 	v1.Handle("/challenge/", s.GetChallengeRouter())
 	v1.Handle("/auth/github", s.GetGithubAuthRouter())
 	v1.Handle("/auth/github/", s.GetGithubAuthRouter())
-
-	v1.Handle("POST /validateToken", convertToHandleFunc(s.handleValidateToken))
-	v1.Handle("GET /logout", convertToHandleFunc(s.handleLogout))
-	v1.Handle("GET /access_token", convertToHandleFunc(s.handleAccessToken))
+	v1.Handle("POST /auth/validate_token", convertToHandleFunc(s.handleValidateToken))
+	v1.Handle("GET /auth/refresh", convertToHandleFunc(s.handleAccessToken))
+	v1.Handle("GET /auth/logout", convertToHandleFunc(s.handleLogout))
 
 	main := http.NewServeMux()
 	main.HandleFunc("/v1", convertToHandleFunc(s.handleRoot))
@@ -231,7 +230,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) error {
 // @Param			token	body		types.VerifyToken	true	"Service token"
 // @Success		200		{object}	types.User
 // @Failure		500		{object}	Error
-// @Router			/validateToken [post]
+// @Router			/auth/validate_token [post]
 func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) error {
 	verifyTokenBody := &types.VerifyToken{}
 	if err := json.NewDecoder(r.Body).Decode(verifyTokenBody); err != nil {
@@ -257,7 +256,7 @@ func (s *Server) handleValidateToken(w http.ResponseWriter, r *http.Request) err
 // @Accept			json
 // @Produce		json
 // @Success		200	{object}	map[string]string
-// @Router			/logout [get]
+// @Router			/auth/logout [get]
 func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) error {
 	returnTo := r.FormValue("return_to")
 
@@ -289,12 +288,28 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request) error {
 func (s *Server) handleAccessToken(w http.ResponseWriter, r *http.Request) error {
 	refreshToken := getCookie(r, "refresh_token")
 	if refreshToken == "" {
-		return fmt.Errorf("refresh token not found")
+		w.Header().Add("Set-Cookie", s.createCookie("access_token", "", time.Now().Add(-1*(time.Minute*60*24))).String())
+		w.Header().Add("Set-Cookie", s.createCookie("refresh_token", "", time.Now().Add(-1*(time.Minute*60*24))).String())
+
+		loggedInCookie := s.createCookie("logged_in", "false", time.Now().Add(-1*(time.Minute*60*24)))
+		loggedInCookie.HttpOnly = false
+		w.Header().Add("Set-Cookie", (loggedInCookie).String())
+
+		log.Printf("%s %s", utils.GetLogTag("error"), types.ErrorRefreshTokenNotFound)
+		return WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": types.ErrorRefreshTokenNotFound})
 	}
 
 	refreshTokenPayload := &types.RefreshTokenPayload{}
 	if err := utils.ValidateAndParseJWT(refreshToken, refreshTokenPayload); err != nil {
-		return err
+		w.Header().Add("Set-Cookie", s.createCookie("access_token", "", time.Now().Add(-1*(time.Minute*60*24))).String())
+		w.Header().Add("Set-Cookie", s.createCookie("refresh_token", "", time.Now().Add(-1*(time.Minute*60*24))).String())
+
+		loggedInCookie := s.createCookie("logged_in", "false", time.Now().Add(-1*(time.Minute*60*24)))
+		loggedInCookie.HttpOnly = false
+		w.Header().Add("Set-Cookie", (loggedInCookie).String())
+
+		log.Printf("%s %s", utils.GetLogTag("error"), types.ErrorInvalidRefreshToken)
+		return WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": types.ErrorInvalidRefreshToken})
 	}
 
 	user, err := s.db.GetUserByID(refreshTokenPayload.UserID)

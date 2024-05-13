@@ -132,6 +132,9 @@ func (s *Server) handleGithubAuthCallback(w http.ResponseWriter, r *http.Request
 
 	w.Header().Add("Set-Cookie", s.createCookie("refresh_token", refreshToken.Jwt, time.Unix(refreshToken.ExpiresAt, 0)).String())
 	w.Header().Add("Set-Cookie", s.createCookie("access_token", accessToken.Jwt, time.Unix(accessToken.ExpiresAt, 0)).String())
+	loggedInCookie := s.createCookie("logged_in", "true", time.Unix(refreshToken.ExpiresAt, 0))
+	loggedInCookie.HttpOnly = false
+	w.Header().Add("Set-Cookie", loggedInCookie.String())
 	log.Println("-- Cookies Set")
 
 	// redirect to frontend

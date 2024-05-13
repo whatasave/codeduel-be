@@ -46,6 +46,72 @@
                 }
             }
         },
+        "/auth/logout": {
+            "get": {
+                "description": "Logout endpoint, it will delete the refresh token cookie",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/validate_token": {
+            "post": {
+                "description": "Validate if the user JWT token is valid, and return user data. Used from other services to validate user token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Validate JWT Token",
+                "parameters": [
+                    {
+                        "description": "Service token",
+                        "name": "token",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.VerifyToken"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.User"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Health check endpoint",
@@ -130,32 +196,6 @@
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/api.Error"
-                        }
-                    }
-                }
-            }
-        },
-        "/logout": {
-            "get": {
-                "description": "Logout endpoint, it will delete the refresh token cookie",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Logout",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
                         }
                     }
                 }
@@ -597,46 +637,6 @@
                 "responses": {
                     "200": {
                         "description": "OK"
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/api.Error"
-                        }
-                    }
-                }
-            }
-        },
-        "/validateToken": {
-            "post": {
-                "description": "Validate if the user JWT token is valid, and return user data. Used from other services to validate user token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "user"
-                ],
-                "summary": "Validate JWT Token",
-                "parameters": [
-                    {
-                        "description": "Service token",
-                        "name": "token",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.VerifyToken"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.User"
-                        }
                     },
                     "500": {
                         "description": "Internal Server Error",

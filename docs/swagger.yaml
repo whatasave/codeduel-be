@@ -277,6 +277,50 @@ paths:
       summary: Access Token
       tags:
       - auth
+  /auth/logout:
+    get:
+      consumes:
+      - application/json
+      description: Logout endpoint, it will delete the refresh token cookie
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Logout
+      tags:
+      - auth
+  /auth/validate_token:
+    post:
+      consumes:
+      - application/json
+      description: Validate if the user JWT token is valid, and return user data.
+        Used from other services to validate user token
+      parameters:
+      - description: Service token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/types.VerifyToken'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.User'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.Error'
+      summary: Validate JWT Token
+      tags:
+      - user
   /health:
     get:
       consumes:
@@ -335,23 +379,6 @@ paths:
       summary: Update lobby
       tags:
       - lobby
-  /logout:
-    get:
-      consumes:
-      - application/json
-      description: Logout endpoint, it will delete the refresh token cookie
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Logout
-      tags:
-      - auth
   /v1:
     get:
       consumes:
@@ -646,33 +673,6 @@ paths:
       security:
       - CookieAuth: []
       summary: Get Profile
-      tags:
-      - user
-  /validateToken:
-    post:
-      consumes:
-      - application/json
-      description: Validate if the user JWT token is valid, and return user data.
-        Used from other services to validate user token
-      parameters:
-      - description: Service token
-        in: body
-        name: token
-        required: true
-        schema:
-          $ref: '#/definitions/types.VerifyToken'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/types.User'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/api.Error'
-      summary: Validate JWT Token
       tags:
       - user
 schemes:
