@@ -15,7 +15,9 @@ func (s *Server) GetLobbyRouter() http.Handler {
 	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/submission", convertToHandleFunc(s.handleLobbyUserSubmission))
 	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/endgame", convertToHandleFunc(s.handleLobbyEnd))
 	router.HandleFunc("GET /lobby/results/{lobbyUniqueId}", convertToHandleFunc(s.handleGetResults))
+	router.HandleFunc("OPTIONS /lobby/{lobbyUniqueId}/sharecode", convertToHandleFunc(s.handleShareCodeOptions))
 	router.HandleFunc("PATCH /lobby/{lobbyUniqueId}/sharecode", convertToHandleFunc(s.handleShareCode, AuthMiddleware))
+	router.HandleFunc("GET /lobby/user/{username}", convertToHandleFunc(s.handleGetMatchByUsername))
 
 	return router
 }
@@ -154,8 +156,35 @@ func (s *Server) handleShareCode(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	log.Print("[API] Share code ", lobbyUniqueId)
+	log.Printf("[API] Share code for lobby %s id: %d", lobbyUniqueId, lobby.Id)
 
 	w.WriteHeader(http.StatusNoContent)
 	return s.db.UpdateShareLobbyCode(lobby.Id, user.Id, shareLobbyCodePayload.ShareCode)
+}
+
+func (s *Server) handleShareCodeOptions(w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Access-Control-Allow-Methods", "PATCH")
+	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+	w.Header().Set("Access-Control-Max-Age", "86400")
+	w.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+// @Summary		Get match by username
+// @Description	Get match by username
+// @Tags			match
+// @Produce		json
+// @Param			username	path		string	true	"Username"
+// @Success		200			{object}	types.SingleMatchResult
+// @Failure		500			{object}	Error
+// @Router			/match/user/{username} [get]
+func (s *Server) handleGetMatchByUsername(w http.ResponseWriter, r *http.Request) error {
+	username := r.PathValue("username")
+	log.Print("[API] Fetching match for user ", username)
+	match, err := s.db.GetMatchByUsername(username)
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, match)
 }

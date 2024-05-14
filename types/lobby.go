@@ -80,3 +80,37 @@ type LobbyUserResult struct {
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 }
+
+type SingleMatchResult struct {
+	Match struct {
+		Id               int      `json:"id"`
+		UniqueId         string   `json:"uuid"`
+		Mode             *string  `json:"mode"`
+		MaxPlayers       int      `json:"max_players"`
+		Duration         int      `json:"duration"`
+		AllowedLanguages []string `json:"allowed_languages"`
+		CreatedAt        string   `json:"created_at"`
+	} `json:"match"`
+	Challenge struct {
+		Id          int     `json:"id"`
+		Title       string  `json:"title"`
+		Description *string `json:"description"`
+		Owner       struct {
+			Id       int     `json:"id"`
+			Username string  `json:"username"`
+			Name     *string `json:"name"`
+			Avatar   string  `json:"avatar"`
+		} `json:"owner"`
+	} `json:"challenge"`
+	Player struct {
+		Id          int     `json:"id"`
+		Username    string  `json:"username"`
+		Name        *string `json:"name"`
+		Avatar      string  `json:"avatar"`
+		Code        *string `json:"code"`
+		Language    *string `json:"language"`
+		TestsPassed int     `json:"tests_passed"`
+		ShowCode    bool    `json:"show_code"`
+		SubmittedAt string  `json:"submitted_at"`
+	} `json:"player"`
+}

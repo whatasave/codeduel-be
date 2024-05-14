@@ -194,6 +194,81 @@ func (m *MariaDB) UpdateShareLobbyCode(lobbyId int, userId int, showCode bool) e
 	return err
 }
 
+func (m *MariaDB) GetMatchByUsername(username string) (*types.SingleMatchResult, error) {
+	query := `
+	SELECT 
+		l.id AS lobby_id, l.uuid AS lobby_uuid, l.created_at AS lobby_created_at,
+		l.mode AS lobby_mode, l.max_players AS lobby_max_players, l.game_duration AS lobby_game_duration, l.allowed_languages AS lobby_allowed_languages,
+		l.challenge_id, ch.title AS challenge_title, ch.description AS challenge_description,
+		own.id AS challenge_owner_id, own.username AS challenge_owner_username, own.name AS challenge_owner_name, own.avatar AS challenge_owner_avatar,
+		us.id AS player_id, us.username AS player_username, us.name AS player_name, us.avatar AS player_avatar,
+		u.code AS player_code, u.language AS player_language, u.tests_passed AS player_tests_passed, u.show_code AS player_show_code, u.submitted_at AS player_submitted_at
+	FROM lobby l
+	JOIN lobby_user u ON l.id = u.lobby_id AND l.ended = 1
+	JOIN user us ON u.user_id = us.id
+	JOIN challenge ch ON l.challenge_id = ch.id
+	JOIN user own ON ch.owner_id = own.id
+	WHERE us.username = ?;`
+
+	rows, err := m.db.Query(query, username)
+	if err != nil {
+		return nil, err
+	}
+
+	match := &types.SingleMatchResult{}
+	for rows.Next() {
+		allowLanguages := ""
+		err := rows.Scan(
+			&match.Match.Id,
+			&match.Match.UniqueId,
+			&match.Match.CreatedAt,
+			&match.Match.Mode,
+			&match.Match.MaxPlayers,
+			&match.Match.Duration,
+			&allowLanguages,
+
+			&match.Challenge.Id,
+			&match.Challenge.Title,
+			&match.Challenge.Description,
+
+			&match.Challenge.Owner.Id,
+			&match.Challenge.Owner.Username,
+			&match.Challenge.Owner.Name,
+			&match.Challenge.Owner.Avatar,
+
+			&match.Player.Id,
+			&match.Player.Username,
+			&match.Player.Name,
+			&match.Player.Avatar,
+			&match.Player.Code,
+			&match.Player.Language,
+			&match.Player.TestsPassed,
+			&match.Player.ShowCode,
+			&match.Player.SubmittedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		match.Match.AllowedLanguages = []string{}
+		languages := strings.Split(allowLanguages, ",")
+		for _, lang := range languages {
+			match.Match.AllowedLanguages = append(match.Match.AllowedLanguages, string(lang))
+		}
+
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return match, nil
+}
+
 // -- Init Tables --
 func (m *MariaDB) InitLobbyTables() []MigrationFunc {
 	return []MigrationFunc{

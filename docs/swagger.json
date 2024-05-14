@@ -201,6 +201,41 @@
                 }
             }
         },
+        "/match/user/{username}": {
+            "get": {
+                "description": "Get match by username",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "match"
+                ],
+                "summary": "Get match by username",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Username",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.SingleMatchResult"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.Error"
+                        }
+                    }
+                }
+            }
+        },
         "/v1": {
             "get": {
                 "description": "Root endpoint",
@@ -909,6 +944,103 @@
             "properties": {
                 "share_code": {
                     "type": "boolean"
+                }
+            }
+        },
+        "types.SingleMatchResult": {
+            "type": "object",
+            "properties": {
+                "challenge": {
+                    "type": "object",
+                    "properties": {
+                        "description": {
+                            "type": "string"
+                        },
+                        "id": {
+                            "type": "integer"
+                        },
+                        "owner": {
+                            "type": "object",
+                            "properties": {
+                                "avatar": {
+                                    "type": "string"
+                                },
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "username": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "title": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "match": {
+                    "type": "object",
+                    "properties": {
+                        "allowed_languages": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "created_at": {
+                            "type": "string"
+                        },
+                        "duration": {
+                            "type": "integer"
+                        },
+                        "id": {
+                            "type": "integer"
+                        },
+                        "max_players": {
+                            "type": "integer"
+                        },
+                        "mode": {
+                            "type": "string"
+                        },
+                        "uuid": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "player": {
+                    "type": "object",
+                    "properties": {
+                        "avatar": {
+                            "type": "string"
+                        },
+                        "code": {
+                            "type": "string"
+                        },
+                        "id": {
+                            "type": "integer"
+                        },
+                        "language": {
+                            "type": "string"
+                        },
+                        "name": {
+                            "type": "string"
+                        },
+                        "show_code": {
+                            "type": "boolean"
+                        },
+                        "submitted_at": {
+                            "type": "string"
+                        },
+                        "tests_passed": {
+                            "type": "integer"
+                        },
+                        "username": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },
