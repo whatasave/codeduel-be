@@ -175,16 +175,16 @@ func (s *Server) handleShareCodeOptions(w http.ResponseWriter, r *http.Request) 
 // @Tags			match
 // @Produce		json
 // @Param			username	path		string	true	"Username"
-// @Success		200			{object}	types.SingleMatchResult
+// @Success		200			{object}	[]types.SingleMatchResult
 // @Failure		500			{object}	Error
 // @Router			/match/user/{username} [get]
 func (s *Server) handleGetMatchByUsername(w http.ResponseWriter, r *http.Request) error {
 	username := r.PathValue("username")
 	log.Print("[API] Fetching match for user ", username)
-	match, err := s.db.GetMatchByUsername(username)
+	matches, err := s.db.GetMatchByUsername(username)
 	if err != nil {
 		return err
 	}
 
-	return WriteJSON(w, http.StatusOK, match)
+	return WriteJSON(w, http.StatusOK, matches)
 }

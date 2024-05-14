@@ -224,7 +224,10 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.SingleMatchResult"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.SingleMatchResult"
+                            }
                         }
                     },
                     "500": {

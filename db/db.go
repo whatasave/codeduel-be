@@ -38,7 +38,7 @@ type DB interface {
 	GetLobbyResults(string) (*types.LobbyResults, error)
 	EndLobby(string) error
 	UpdateShareLobbyCode(int, int, bool) error
-	GetMatchByUsername(string) (*types.SingleMatchResult, error)
+	GetMatchByUsername(string) ([]*types.SingleMatchResult, error)
 
 	GetAuthByProviderAndID(string, string) (*types.AuthEntry, error)
 	CreateAuth(*types.AuthEntry) error

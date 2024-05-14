@@ -194,7 +194,7 @@ func (m *MariaDB) UpdateShareLobbyCode(lobbyId int, userId int, showCode bool) e
 	return err
 }
 
-func (m *MariaDB) GetMatchByUsername(username string) (*types.SingleMatchResult, error) {
+func (m *MariaDB) GetMatchByUsername(username string) ([]*types.SingleMatchResult, error) {
 	query := `
 	SELECT 
 		l.id AS lobby_id, l.uuid AS lobby_uuid, l.created_at AS lobby_created_at,
@@ -215,8 +215,9 @@ func (m *MariaDB) GetMatchByUsername(username string) (*types.SingleMatchResult,
 		return nil, err
 	}
 
-	match := &types.SingleMatchResult{}
+	matches := []*types.SingleMatchResult{}
 	for rows.Next() {
+		match := &types.SingleMatchResult{}
 		allowLanguages := ""
 		err := rows.Scan(
 			&match.Match.Id,
@@ -256,6 +257,7 @@ func (m *MariaDB) GetMatchByUsername(username string) (*types.SingleMatchResult,
 			match.Match.AllowedLanguages = append(match.Match.AllowedLanguages, string(lang))
 		}
 
+		matches = append(matches, match)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -266,7 +268,7 @@ func (m *MariaDB) GetMatchByUsername(username string) (*types.SingleMatchResult,
 		return nil, err
 	}
 
-	return match, nil
+	return matches, nil
 }
 
 // -- Init Tables --

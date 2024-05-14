@@ -457,7 +457,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.SingleMatchResult'
+            items:
+              $ref: '#/definitions/types.SingleMatchResult'
+            type: array
         "500":
           description: Internal Server Error
           schema:
