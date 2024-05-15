@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -26,6 +25,8 @@ type DB interface {
 
 	GetChallenges() (*[]types.Challenge, error)
 	GetChallengeByID(int) (*types.Challenge, error)
+	GetChallengeByIDFull(int) (*types.ChallengeFull, error)
+	GetChallengesID() ([]int, error)
 	CreateChallenge(*types.Challenge) error
 	UpdateChallenge(*types.Challenge) error
 	DeleteChallenge(int) error
@@ -107,7 +108,7 @@ func InitOLD() {
 
 	var version string
 	pool.QueryRow("SELECT VERSION()").Scan(&version)
-	fmt.Println("[DB] Connected to:", version)
+	log.Println("[DB] Connected to:", version)
 	// Query(ctx, *id)
 
 	err = pool.Close()

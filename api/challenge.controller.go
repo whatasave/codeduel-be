@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -14,6 +15,8 @@ func (s *Server) GetChallengeRouter() http.Handler {
 	router.HandleFunc("GET /challenge", convertToHandleFunc(s.handleGetChallenges))
 	router.HandleFunc("POST /challenge", convertToHandleFunc(s.handleCreateChallenge, AuthMiddleware))
 	router.HandleFunc("GET /challenge/{id}", convertToHandleFunc(s.handleGetChallengeByID))
+	router.HandleFunc("GET /challenge/random/full", convertToHandleFunc(s.handleGetRandomChallengeFull, AuthMiddleware))
+	router.HandleFunc("GET /challenge/{id}/full", convertToHandleFunc(s.handleGetChallengeByIDFull, AuthMiddleware))
 	router.HandleFunc("PUT /challenge/{id}", convertToHandleFunc(s.handleUpdateChallenge, AuthMiddleware))
 	router.HandleFunc("DELETE /challenge/{id}", convertToHandleFunc(s.handleDeleteChallenge, AuthMiddleware))
 	return router
@@ -86,6 +89,56 @@ func (s *Server) handleGetChallengeByID(w http.ResponseWriter, r *http.Request) 
 
 	log.Print("[API] Fetching challenge ", id)
 	challenge, err := s.db.GetChallengeByID(id)
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, challenge)
+}
+
+// @Summary		Get challenge by ID with full details
+// @Description	Get challenge by ID with full details
+// @Tags			challenge
+// @Accept			json
+// @Produce		json
+// @Param			id	path		int	true	"Challenge ID"
+// @Success		200	{object}	types.ChallengeFull
+// @Router			/v1/challenge/{id}/full [get]
+func (s *Server) handleGetChallengeByIDFull(w http.ResponseWriter, r *http.Request) error {
+	// TODO check if the request is from the lobby service
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		return err
+	}
+
+	log.Print("[API] Fetching challenge ", id)
+	challenge, err := s.db.GetChallengeByIDFull(id)
+	if err != nil {
+		return err
+	}
+
+	return WriteJSON(w, http.StatusOK, challenge)
+}
+
+// @Summary		Get random challenge with full details
+// @Description	Get random challenge with full details
+// @Tags			challenge
+// @Accept			json
+// @Produce		json
+// @Success		200	{object}	types.ChallengeFull
+// @Router			/v1/challenge/random/full [get]
+func (s *Server) handleGetRandomChallengeFull(w http.ResponseWriter, _ *http.Request) error {
+	// TODO check if the request is from the lobby service
+	log.Print("[API] Fetching random challenge")
+
+	challengesId, err := s.db.GetChallengesID()
+	if err != nil {
+		return err
+	}
+
+	randomId := challengesId[rand.Intn(len(challengesId))]
+
+	challenge, err := s.db.GetChallengeByIDFull(randomId)
 	if err != nil {
 		return err
 	}

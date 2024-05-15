@@ -1,9 +1,11 @@
 package db
 
 import (
+	"log"
 	"strings"
 
 	"github.com/xedom/codeduel/types"
+	"github.com/xedom/codeduel/utils"
 )
 
 func (m *MariaDB) CreateLobby(lobby *types.Lobby) error {
@@ -123,6 +125,11 @@ func (m *MariaDB) GetLobbyResults(lobbyUniqueId string) (*types.LobbyResults, er
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("%s DB(GetLobbyResults): %s", utils.GetLogTag("DB"), err)
+		}
+	}()
 
 	lobby := &types.Lobby{}
 	results := []types.LobbyUserResult{}
@@ -165,12 +172,7 @@ func (m *MariaDB) GetLobbyResults(lobbyUniqueId string) (*types.LobbyResults, er
 
 		results = append(results, user)
 	}
-
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := rows.Close(); err != nil {
 		return nil, err
 	}
 
@@ -214,6 +216,11 @@ func (m *MariaDB) GetMatchByUsername(username string) ([]*types.SingleMatchResul
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("%s DB(GetMatchByUsername): %s", utils.GetLogTag("DB"), err)
+		}
+	}()
 
 	matches := []*types.SingleMatchResult{}
 	for rows.Next() {
@@ -261,10 +268,6 @@ func (m *MariaDB) GetMatchByUsername(username string) ([]*types.SingleMatchResul
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := rows.Close(); err != nil {
 		return nil, err
 	}
 

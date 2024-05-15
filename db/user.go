@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/xedom/codeduel/types"
@@ -14,6 +15,11 @@ func (m *MariaDB) getLastInsertID() (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer func() {
+		if err := row.Close(); err != nil {
+			log.Printf("%s DB(getLastInsertID): %s", utils.GetLogTag("DB"), err)
+		}
+	}()
 
 	var id int
 	for row.Next() {
@@ -22,10 +28,6 @@ func (m *MariaDB) getLastInsertID() (int, error) {
 		}
 	}
 	if err := row.Err(); err != nil {
-		return 0, err
-	}
-
-	if err := row.Close(); err != nil {
 		return 0, err
 	}
 
@@ -69,28 +71,18 @@ func (m *MariaDB) CreateAuth(auth *types.AuthEntry) error {
 
 func (m *MariaDB) GetAuthByProviderAndID(provider, providerID string) (*types.AuthEntry, error) {
 	query := `SELECT * FROM auth WHERE provider = ? AND provider_id = ? LIMIT 1;`
-	rows, err := m.db.Query(query, provider, providerID)
-	if err != nil {
+	row := m.db.QueryRow(query, provider, providerID)
+
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+
+	auth := &types.AuthEntry{}
+	if err := row.Scan(&auth.Id, &auth.UserId, &auth.Provider, &auth.ProviderId, &auth.CreatedAt, &auth.UpdatedAt); err != nil {
 		return nil, err
 	}
 
-	for rows.Next() {
-		auth := &types.AuthEntry{}
-		if err := rows.Scan(&auth.Id, &auth.UserId, &auth.Provider, &auth.ProviderId, &auth.CreatedAt, &auth.UpdatedAt); err != nil {
-			return nil, err
-		}
-
-		return auth, nil
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-
-	return nil, fmt.Errorf("DB(GetAuthByProviderAndID): auth with provider %s and provider_id %s not found", provider, providerID)
+	return auth, nil
 }
 
 func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
@@ -99,6 +91,11 @@ func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("%s DB(GetUsers): %s", utils.GetLogTag("DB"), err)
+		}
+	}()
 
 	var users []*types.UserResponse
 	for rows.Next() {
@@ -116,10 +113,6 @@ func (m *MariaDB) GetUsers() ([]*types.UserResponse, error) {
 		return nil, err
 	}
 
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-
 	return users, nil
 }
 
@@ -129,6 +122,11 @@ func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("DB(GetUserByID): %s", err.Error())
 	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("%s DB(GetUserByID): %s", utils.GetLogTag("DB"), err)
+		}
+	}()
 
 	for rows.Next() {
 		return m.parseUser(rows)
@@ -136,10 +134,6 @@ func (m *MariaDB) GetUserByID(id int) (*types.User, error) {
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("DB(GetUserByID): %s", err.Error())
-	}
-
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 
 	return nil, fmt.Errorf("DB(GetUserByID): user with id %d not found", id)
@@ -151,6 +145,11 @@ func (m *MariaDB) GetUserByUsername(username string) (*types.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("DB(GetUserByUsername): %s", err.Error())
 	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("%s DB(GetUserByUsername): %s", utils.GetLogTag("DB"), err)
+		}
+	}()
 
 	for rows.Next() {
 		return m.parseUser(rows)
@@ -158,10 +157,6 @@ func (m *MariaDB) GetUserByUsername(username string) (*types.User, error) {
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("DB(GetUserByUsername): %s", err.Error())
-	}
-
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 
 	return nil, fmt.Errorf("DB(GetUserByUsername): user with username %s not found", username)
@@ -182,6 +177,11 @@ func (m *MariaDB) GetUserStats(id int) ([]*types.UserStatsParsed, error) {
 	if err != nil {
 		return nil, fmt.Errorf("DB(GetUserStats:0): %s", err.Error())
 	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("%s DB(GetUserStats:0): %s", utils.GetLogTag("DB"), err)
+		}
+	}()
 
 	var stats []*types.UserStatsParsed
 
@@ -203,18 +203,14 @@ func (m *MariaDB) GetUserStats(id int) ([]*types.UserStatsParsed, error) {
 		return nil, fmt.Errorf("DB(GetUserStats:2): %s", err.Error())
 	}
 
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-
 	return stats, nil
 }
 
 func (m *MariaDB) CreateUser(user *types.User) error {
-	query := `INSERT INTO user (username, email, avatar)
-		VALUES (?, ?, ?);
+	query := `INSERT INTO user (username, name, email, avatar)
+		VALUES (?, ?, ?, ?);
 	;`
-	_, err := m.db.Exec(query, user.Username, user.Email, user.Avatar)
+	_, err := m.db.Exec(query, user.Username, user.Name, user.Email, user.Avatar)
 	if err != nil {
 		return err
 	}
