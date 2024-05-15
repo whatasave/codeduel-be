@@ -58,7 +58,7 @@ func (s *Server) handleCreateLobby(w http.ResponseWriter, r *http.Request) error
 	}
 
 	if err := s.db.CreateLobby(&types.Lobby{
-		UniqueId:    createLobbyPayload.LobbyId,
+		UniqueId:    createLobbyPayload.LobbyUniqueId,
 		OwnerId:     createLobbyPayload.OwnerId,
 		UsersId:     createLobbyPayload.UsersId,
 		ChallengeId: createLobbyPayload.ChallengeId,

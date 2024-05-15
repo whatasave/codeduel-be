@@ -3,11 +3,11 @@ package types
 import "time"
 
 type CreateLobbyRequest struct {
-	LobbyId     string `json:"lobby_id"`
-	OwnerId     int    `json:"owner_id"`
-	UsersId     []int  `json:"users_id"`
-	ChallengeId int    `json:"challenge_id"`
-	Settings    struct {
+	LobbyUniqueId string `json:"lobby_id"`
+	OwnerId       int    `json:"owner_id"`
+	UsersId       []int  `json:"users_id"`
+	ChallengeId   int    `json:"challenge_id"`
+	Settings      struct {
 		Mode             string   `json:"mode"`
 		MaxPlayers       int      `json:"max_players"`
 		GameDuration     int      `json:"game_duration"`

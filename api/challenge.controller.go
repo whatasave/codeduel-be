@@ -15,7 +15,7 @@ func (s *Server) GetChallengeRouter() http.Handler {
 	router.HandleFunc("GET /challenge", convertToHandleFunc(s.handleGetChallenges))
 	router.HandleFunc("POST /challenge", convertToHandleFunc(s.handleCreateChallenge, AuthMiddleware))
 	router.HandleFunc("GET /challenge/{id}", convertToHandleFunc(s.handleGetChallengeByID))
-	router.HandleFunc("GET /challenge/random/full", convertToHandleFunc(s.handleGetRandomChallengeFull, AuthMiddleware))
+	router.HandleFunc("GET /challenge/random/full", convertToHandleFunc(s.handleGetRandomChallengeFull)) // TODO: add AuthMiddleware
 	router.HandleFunc("GET /challenge/{id}/full", convertToHandleFunc(s.handleGetChallengeByIDFull, AuthMiddleware))
 	router.HandleFunc("PUT /challenge/{id}", convertToHandleFunc(s.handleUpdateChallenge, AuthMiddleware))
 	router.HandleFunc("DELETE /challenge/{id}", convertToHandleFunc(s.handleDeleteChallenge, AuthMiddleware))

@@ -65,8 +65,8 @@ func LoadConfig() *Config {
 
 			MariaDBHost:     GetEnv("MARIADB_HOST", "localhost"),
 			MariaDBPort:     GetEnv("MARIADB_PORT", "3306"),
-			MariaDBUser:     GetEnv("MARIADB_USER", "root"),
-			MariaDBPassword: GetEnv("MARIADB_PASSWORD", "root"),
+			MariaDBUser:     GetEnv("MARIADB_USER", "codeduel"),
+			MariaDBPassword: GetEnv("MARIADB_PASSWORD", "codeduel"),
 			MariaDBDatabase: GetEnv("MARIADB_DATABASE", "codeduel"),
 
 			AuthGitHubClientID:          GetEnv("AUTH_GITHUB_CLIENT_ID", ""),
