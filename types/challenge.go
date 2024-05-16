@@ -1,17 +1,21 @@
 package types
 
 type Challenge struct {
-	Id          int    `json:"id"`
-	OwnerId     int    `json:"owner_id"` // User.ID
+	Id      int `json:"id"`
+	OwnerId int `json:"owner_id"` // User.ID
+
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Content     string `json:"content"` // markdown maybe the link to the file
+
+	TestCases []TestCase `json:"testCases"`
 
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }
 
 type TestCase struct {
+	Name   string `json:"name"`
 	Input  string `json:"input"`
 	Output string `json:"output"`
 }

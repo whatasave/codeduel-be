@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"log"
-	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -129,16 +128,8 @@ func (s *Server) handleGetChallengeByIDFull(w http.ResponseWriter, r *http.Reque
 // @Router			/v1/challenge/random/full [get]
 func (s *Server) handleGetRandomChallengeFull(w http.ResponseWriter, _ *http.Request) error {
 	// TODO check if the request is from the lobby service
-	log.Print("[API] Fetching random challenge")
 
-	challengesId, err := s.db.GetChallengesID()
-	if err != nil {
-		return err
-	}
-
-	randomId := challengesId[rand.Intn(len(challengesId))]
-
-	challenge, err := s.db.GetChallengeByIDFull(randomId)
+	challenge, err := s.db.GetRandomChallengeFull()
 	if err != nil {
 		return err
 	}

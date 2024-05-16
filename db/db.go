@@ -26,7 +26,7 @@ type DB interface {
 	GetChallenges() (*[]types.Challenge, error)
 	GetChallengeByID(int) (*types.Challenge, error)
 	GetChallengeByIDFull(int) (*types.ChallengeFull, error)
-	GetChallengesID() ([]int, error)
+	GetRandomChallengeFull() (*types.ChallengeFull, error)
 	CreateChallenge(*types.Challenge) error
 	UpdateChallenge(*types.Challenge) error
 	DeleteChallenge(int) error

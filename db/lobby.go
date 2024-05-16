@@ -384,10 +384,10 @@ func (m *MariaDB) createTableLanguage() error {
 	(1, 'cpp'),
 	(2, 'java'),
 	(3, 'js'),
-	(4, 'golang'),
-	(5, 'rust'),
-	(6, 'ruby'),
-	(7, 'python');`
+	(4, 'go'),
+	(5, 'rs'),
+	(6, 'rb'),
+	(7, 'py');`
 	_, err = m.db.Exec(queryDefaultValues)
 	return err
 }

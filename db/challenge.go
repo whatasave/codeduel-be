@@ -1,7 +1,7 @@
 package db
 
 import (
-	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -10,7 +10,7 @@ import (
 )
 
 func (m *MariaDB) GetChallenges() (*[]types.Challenge, error) {
-	query := "SELECT * FROM `challenge`"
+	query := "SELECT id, owner_id, title, description, content, tests, created_at, updated_at FROM `challenge`;"
 	rows, err := m.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -24,10 +24,28 @@ func (m *MariaDB) GetChallenges() (*[]types.Challenge, error) {
 	challenges := &[]types.Challenge{}
 	for rows.Next() {
 		var challenge types.Challenge
-		err := rows.Scan(&challenge.Id, &challenge.OwnerId, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
-		if err != nil {
+		var testCases string
+
+		if err := rows.Scan(
+			&challenge.Id,
+			&challenge.OwnerId,
+
+			&challenge.Title,
+			&challenge.Description,
+			&challenge.Content,
+
+			&testCases,
+
+			&challenge.CreatedAt,
+			&challenge.UpdatedAt,
+		); err != nil {
 			return nil, err
 		}
+
+		if err := json.Unmarshal([]byte(testCases), &challenge.TestCases); err != nil {
+			return nil, err
+		}
+
 		*challenges = append(*challenges, challenge)
 	}
 
@@ -39,33 +57,146 @@ func (m *MariaDB) GetChallenges() (*[]types.Challenge, error) {
 }
 
 func (m *MariaDB) GetChallengeByID(id int) (*types.Challenge, error) {
-	query := "SELECT * FROM `challenge` WHERE id = ?;"
-	rows, err := m.db.Query(query, id)
+	query := "SELECT id, owner_id, title, description, content, tests, created_at, updated_at FROM `challenge` WHERE id = ? LIMIT 1;"
+	row := m.db.QueryRow(query, id)
+	if row == nil {
+		return nil, fmt.Errorf("challenge not found")
+	}
+
+	challenge := &types.Challenge{}
+	var testCases string
+
+	if err := row.Scan(
+		&challenge.Id,
+		&challenge.OwnerId,
+
+		&challenge.Title,
+		&challenge.Description,
+		&challenge.Content,
+
+		&testCases,
+
+		&challenge.CreatedAt,
+		&challenge.UpdatedAt,
+	); err != nil {
+		return nil, fmt.Errorf("row.Scan | id: %d | %w", id, err)
+	}
+
+	if err := json.Unmarshal([]byte(testCases), &challenge.TestCases); err != nil {
+		return nil, err
+	}
+
+	return challenge, nil
+}
+
+func (m *MariaDB) GetChallengesByOwnerID(ownerID int) (*[]types.Challenge, error) {
+	query := "SELECT id, owner_id, title, description, content, tests, created_at, updated_at FROM `challenge` WHERE owner_id = ?;"
+	rows, err := m.db.Query(query, ownerID)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		if err := rows.Close(); err != nil {
-			log.Printf("%s DB(GetChallengeByID): %s", utils.GetLogTag("DB"), err)
+			log.Printf("%s DB(GetChallengesByOwnerID): %s", utils.GetLogTag("DB"), err)
 		}
 	}()
 
+	challenges := &[]types.Challenge{}
 	for rows.Next() {
-		return m.parseChallenge(rows)
+		var challenge types.Challenge
+		var testCases string
+		err := rows.Scan(
+			&challenge.Id,
+			&challenge.OwnerId,
+
+			&challenge.Title,
+			&challenge.Description,
+			&challenge.Content,
+
+			&testCases,
+
+			&challenge.CreatedAt,
+			&challenge.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		err = json.Unmarshal([]byte(testCases), &challenge.TestCases)
+		if err != nil {
+			return nil, err
+		}
+
+		*challenges = append(*challenges, challenge)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return challenges, nil
+}
+
+func (m *MariaDB) GetRandomChallengeFull() (*types.ChallengeFull, error) {
+	query := `
+	SELECT
+	c.id, c.title, c.description, c.content, c.created_at, c.updated_at,
+	c.owner_id, u.name, u.username, u.avatar,
+	c.tests, c.tests_hidden
+	FROM challenge c
+	JOIN user u ON c.owner_id = u.id
+	ORDER BY RAND()
+	LIMIT 1;`
+
+	row := m.db.QueryRow(query)
+	if row == nil {
+		return nil, fmt.Errorf("challenge not found")
+	}
+
+	if row.Err() != nil {
+		return nil, row.Err()
+	}
+
+	challenge := &types.ChallengeFull{}
+	var testCases, hiddenTestCases string
+
+	err := row.Scan(
+		&challenge.Id,
+		&challenge.Title,
+		&challenge.Description,
+		&challenge.Content,
+		&challenge.CreatedAt,
+		&challenge.UpdatedAt,
+		&challenge.Owner.Id,
+		&challenge.Owner.Name,
+		&challenge.Owner.Username,
+		&challenge.Owner.Avatar,
+		&testCases,
+		&hiddenTestCases,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(testCases), &challenge.TestCases)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(hiddenTestCases), &challenge.HiddenTestCases)
+	if err != nil {
+		return nil, err
+	}
+
+	return challenge, nil
 }
 
 func (m *MariaDB) GetChallengeByIDFull(id int) (*types.ChallengeFull, error) {
 	query := `
 	SELECT
 	c.id, c.title, c.description, c.content, c.created_at, c.updated_at,
-	c.owner_id, u.name, u.username, u.avatar
+	c.owner_id, u.name, u.username, u.avatar,
+	c.tests, c.tests_hidden
 	FROM challenge c
 	JOIN user u ON c.owner_id = u.id
 	WHERE c.id = ?
@@ -81,6 +212,8 @@ func (m *MariaDB) GetChallengeByIDFull(id int) (*types.ChallengeFull, error) {
 	}
 
 	challenge := &types.ChallengeFull{}
+	var testCases, hiddenTestCases string
+
 	err := row.Scan(
 		&challenge.Id,
 		&challenge.Title,
@@ -92,60 +225,24 @@ func (m *MariaDB) GetChallengeByIDFull(id int) (*types.ChallengeFull, error) {
 		&challenge.Owner.Name,
 		&challenge.Owner.Username,
 		&challenge.Owner.Avatar,
+		&testCases,
+		&hiddenTestCases,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Get test cases
-	challenge.TestCases = []types.TestCase{
-		{Input: "1 2", Output: "3"},
-		{Input: "2 3", Output: "5"},
-		{Input: "3 4", Output: "7"},
-		{Input: "4 5", Output: "9"},
-		{Input: "5 6 7", Output: "18"},
-		{Input: "6 7 8", Output: "21"},
-		{Input: "7 8 9", Output: "24"},
-		{Input: "8 9 10", Output: "27"},
-	}
-	challenge.HiddenTestCases = []types.TestCase{
-		{Input: "100 1", Output: "101"},
-		{Input: "5 6 ", Output: "11"},
-		{Input: " 6 7", Output: "13"},
-		{Input: " 7 8 ", Output: "15"},
-		{Input: "7 8 2 3", Output: "20"},
-	}
-
-	return challenge, nil
-}
-
-func (m *MariaDB) GetChallengesID() ([]int, error) {
-	query := "SELECT id FROM `challenge`;"
-	rows, err := m.db.Query(query)
+	err = json.Unmarshal([]byte(testCases), &challenge.TestCases)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("%s DB(GetChallengesID): %s", utils.GetLogTag("DB"), err)
-		}
-	}()
 
-	ids := []int{}
-	for rows.Next() {
-		var id int
-		err := rows.Scan(&id)
-		if err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
-	}
-
-	if err := rows.Err(); err != nil {
+	err = json.Unmarshal([]byte(hiddenTestCases), &challenge.HiddenTestCases)
+	if err != nil {
 		return nil, err
 	}
 
-	return ids, nil
+	return challenge, nil
 }
 
 func (m *MariaDB) CreateChallenge(challenge *types.Challenge) error {
@@ -174,35 +271,6 @@ func (m *MariaDB) DeleteChallenge(id int) error {
 	return err
 }
 
-func (m *MariaDB) GetChallengesByOwnerID(ownerID int) (*[]types.Challenge, error) {
-	query := "SELECT * FROM `challenge` WHERE owner_id = ?;"
-	rows, err := m.db.Query(query, ownerID)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("%s DB(GetChallengesByOwnerID): %s", utils.GetLogTag("DB"), err)
-		}
-	}()
-
-	challenges := &[]types.Challenge{}
-	for rows.Next() {
-		var challenge types.Challenge
-		err := rows.Scan(&challenge.Id, &challenge.OwnerId, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
-		if err != nil {
-			return nil, err
-		}
-		*challenges = append(*challenges, challenge)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return challenges, nil
-}
-
 // -- Init Tables --
 func (m *MariaDB) InitChallengeTables() []MigrationFunc {
 	return []MigrationFunc{
@@ -217,6 +285,10 @@ func (m *MariaDB) createTableChallenge() error {
 		title VARCHAR(50) NOT NULL,
 		description VARCHAR(255) NOT NULL,
 		content LONGTEXT NOT NULL,
+
+		tests JSON NULL DEFAULT NULL,
+		tests_hidden JSON NULL DEFAULT NULL,
+
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		
@@ -226,14 +298,4 @@ func (m *MariaDB) createTableChallenge() error {
 	);`
 	_, err := m.db.Exec(query)
 	return err
-}
-
-// -- Utils --
-func (m *MariaDB) parseChallenge(rows *sql.Rows) (*types.Challenge, error) {
-	var challenge types.Challenge
-	err := rows.Scan(&challenge.Id, &challenge.OwnerId, &challenge.Title, &challenge.Description, &challenge.Content, &challenge.CreatedAt, &challenge.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &challenge, nil
 }
